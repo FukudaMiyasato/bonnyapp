@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#fbf4ee" />
   <meta name="format-detection" content="telephone=no" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <!-- Contenido a pantalla completa bajo la barra de estado (zona de la cámara) -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Bonny" />
   <title>Bonny</title>
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -32,25 +32,23 @@
       </div>
     </section>
 
-    <section class="sheet">
-      <svg class="sheet__wave" viewBox="0 0 798 234" aria-hidden="true">
-        <path d="M0 62 Q32 60 55 82 Q400 -82 743 82 Q766 60 798 62 V234 H0 Z" />
-      </svg>
+    <section class="ui">
+      <div class="card">
+        <div class="copy">
+          <article class="copy__item" data-index="0">
+            <h1>Crea recuerdos</h1>
+            <p>Toma fotos, graba audios y videos. Guarda <mark>cualquier</mark> momento importante.</p>
+          </article>
+          <article class="copy__item" data-index="1">
+            <h1>Revive cada momento</h1>
+            <p>No importa lo que guardaste, acá podrás revivirlo.</p>
+          </article>
+        </div>
+      </div>
 
       <div class="dots" role="tablist" aria-label="Pasos">
         <button class="dot" role="tab" aria-label="Paso 1" data-go="0"></button>
         <button class="dot" role="tab" aria-label="Paso 2" data-go="1"></button>
-      </div>
-
-      <div class="copy">
-        <article class="copy__item" data-index="0">
-          <h1>Crea recuerdos</h1>
-          <p>Toma fotos, graba audios y videos. Guarda <mark>cualquier</mark> momento importante.</p>
-        </article>
-        <article class="copy__item" data-index="1">
-          <h1>Revive cada momento</h1>
-          <p>No importa lo que guardaste, acá podrás revivirlo.</p>
-        </article>
       </div>
 
       <div class="actions">
@@ -59,6 +57,21 @@
     </section>
   </main>
 
+  <!-- Filtro de nostalgia: luces que se filtran, acabado mate, grano y viñeta -->
+  <span class="fx fx__leak fx__leak--a" aria-hidden="true"></span>
+  <span class="fx fx__leak fx__leak--b" aria-hidden="true"></span>
+  <span class="fx fx__leak fx__leak--c" aria-hidden="true"></span>
+  <span class="fx fx__matte" aria-hidden="true"></span>
+  <span class="fx fx__tint" aria-hidden="true"></span>
+  <span class="fx fx__grain" aria-hidden="true"></span>
+  <span class="fx fx__vignette" aria-hidden="true"></span>
+
+  <!-- Botón de música: visible en toda la app -->
+  <button class="music" type="button" aria-label="Pausar música" aria-pressed="true">
+    <img src="assets/img/sound.png" alt="" draggable="false" />
+  </button>
+
+  <script src="audio.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

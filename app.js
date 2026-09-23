@@ -5,6 +5,8 @@
   const copies = [...root.querySelectorAll(".copy__item")];
   const dots = [...root.querySelectorAll(".dot")];
   const startBtn = root.querySelector(".btn-start");
+  const musicBtn = document.querySelector(".music");
+  const audio = window.BonnyAudio;
   const total = videos.length;
 
   const DURATION = 900;   // ms de un pase completo
@@ -26,75 +28,116 @@
   }, { passive: false });
   document.addEventListener("dblclick", (e) => e.preventDefault());
 
-  /* ---------- Sonido de pase de página (sintetizado) ---------- */
+  /* ---------- Música de fondo + notas flotantes ---------- */
 
-  let audioCtx = null;
-  let flipBuffer = null;
+  const MUSIC_KEY = "bonny:music";
+  let musicOn = true;
+  try { musicOn = localStorage.getItem(MUSIC_KEY) !== "0"; } catch (_) {}
 
-  function unlockAudio() {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    if (!audioCtx) {
-      audioCtx = new AC();
-      flipBuffer = makeFlipBuffer(audioCtx);
-    }
-    if (audioCtx.state === "suspended") audioCtx.resume();
+  function setMusic(on) {
+    musicOn = on;
+    try { localStorage.setItem(MUSIC_KEY, on ? "1" : "0"); } catch (_) {}
+    musicBtn.setAttribute("aria-pressed", String(on));
+    musicBtn.setAttribute("aria-label", on ? "Pausar música" : "Reproducir música");
+    if (on) audio.startMusic();
+    else audio.stopMusic();
   }
 
-  // Ruido "papel": ráfaga con textura crujiente + golpecito final de la hoja al caer
-  function makeFlipBuffer(ctx) {
-    const sr = ctx.sampleRate;
-    const len = Math.floor(sr * 0.55);
-    const buf = ctx.createBuffer(1, len, sr);
-    const d = buf.getChannelData(0);
-    let crinkle = 1;
-    for (let i = 0; i < len; i++) {
-      const t = i / sr;
-      if (i % Math.floor(sr * 0.004) === 0) crinkle = 0.45 + Math.random() * 0.55;
-      let env;
-      if (t < 0.06) env = t / 0.06;
-      else if (t < 0.3) env = 1 - ((t - 0.06) / 0.24) * 0.7;
-      else env = 0.3 * Math.exp(-(t - 0.3) * 18);
-      // golpecito cuando la hoja se asienta
-      const slap = t > 0.3 ? 0.9 * Math.exp(-(t - 0.3) * 60) : 0;
-      d[i] = (Math.random() * 2 - 1) * (env * crinkle + slap);
-    }
-    return buf;
+  // La música arranca con el primer toque (los navegadores no permiten audio antes)
+  document.addEventListener("pointerdown", (e) => {
+    audio.unlock();
+    if (musicOn && !audio.musicPlaying && !musicBtn.contains(e.target)) audio.startMusic();
+  }, true);
+
+  musicBtn.addEventListener("click", () => {
+    // si estaba "encendida" pero aún no sonaba, el primer toque la inicia
+    if (musicOn && !audio.musicPlaying) setMusic(true);
+    else setMusic(!musicOn);
+  });
+  musicBtn.setAttribute("aria-pressed", String(musicOn));
+
+  const GLYPHS = ["♪", "♫", "♬", "♩"];
+  const NOTE_COLORS = ["#cc6450", "#fbf4ee", "#e8a25c", "#cc6450"];
+
+  function emitNote() {
+    const r = musicBtn.getBoundingClientRect();
+    const n = document.createElement("span");
+    n.className = "note";
+    n.textContent = GLYPHS[(Math.random() * GLYPHS.length) | 0] + "︎";
+    n.style.color = NOTE_COLORS[(Math.random() * NOTE_COLORS.length) | 0];
+    const size = 14 + Math.random() * 12;
+    n.style.fontSize = size + "px";
+    n.style.left = r.left + r.width * 0.35 + "px";
+    n.style.top = r.top + r.height * 0.4 + "px";
+    document.body.appendChild(n);
+
+    // salen hacia la izquierda y abajo, ondulando
+    const dx = -(60 + Math.random() * 90);
+    const dy = 20 + Math.random() * 90;
+    const sway = 10 + Math.random() * 14;
+    const rot = (Math.random() - 0.5) * 50;
+    n.animate([
+      { transform: "translate(0, 0) scale(0.4) rotate(0deg)", opacity: 0 },
+      { transform: `translate(${dx * 0.3}px, ${dy * 0.25 - sway}px) scale(1) rotate(${rot * 0.4}deg)`, opacity: 1, offset: 0.2 },
+      { transform: `translate(${dx * 0.65}px, ${dy * 0.6 + sway}px) scale(1.05) rotate(${-rot * 0.5}deg)`, opacity: 0.85, offset: 0.6 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.9) rotate(${rot}deg)`, opacity: 0 },
+    ], { duration: 2200 + Math.random() * 900, easing: "ease-out" }).onfinish = () => n.remove();
   }
 
-  function playFlip(strength = 1) {
-    if (!audioCtx || !flipBuffer) return;
-    const t = audioCtx.currentTime;
-    const src = audioCtx.createBufferSource();
-    src.buffer = flipBuffer;
-    src.playbackRate.value = 0.9 + Math.random() * 0.2;
+  (function noteLoop() {
+    if (musicOn && !document.hidden) emitNote();
+    setTimeout(noteLoop, 380 + Math.random() * 320);
+  })();
 
-    const band = audioCtx.createBiquadFilter();
-    band.type = "bandpass";
-    band.Q.value = 0.7;
-    band.frequency.setValueAtTime(1100, t);
-    band.frequency.linearRampToValueAtTime(3200, t + 0.14);
-    band.frequency.exponentialRampToValueAtTime(900, t + 0.42);
+  /* ---------- Textos letra por letra ---------- */
 
-    const gain = audioCtx.createGain();
-    gain.gain.value = 0.55 * strength;
-
-    src.connect(band).connect(gain).connect(audioCtx.destination);
-    src.start(t);
+  // Parte cada texto en palabras (para no cortar al saltar de línea) y letras
+  function splitChars(el, state, stepMs) {
+    [...el.childNodes].forEach((node) => {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        splitChars(node, state, stepMs);
+        return;
+      }
+      if (node.nodeType !== Node.TEXT_NODE) return;
+      const frag = document.createDocumentFragment();
+      node.textContent.split(/(\s+)/).forEach((part) => {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(" ")); return; }
+        const w = document.createElement("span");
+        w.className = "w";
+        for (const ch of part) {
+          const c = document.createElement("span");
+          c.className = "ch";
+          c.textContent = ch;
+          c.style.setProperty("--d", Math.round(state.t) + "ms");
+          state.t += stepMs;
+          w.appendChild(c);
+        }
+        frag.appendChild(w);
+      });
+      node.replaceWith(frag);
+    });
   }
+
+  copies.forEach((item) => {
+    const state = { t: 180 }; // espera a que el texto anterior se desvanezca
+    splitChars(item.querySelector("h1"), state, 26);
+    state.t += 60;
+    splitChars(item.querySelector("p"), state, 11);
+  });
 
   /* ---------- Mitades dibujadas desde los videos ---------- */
 
   const $ = (sel) => stage.querySelector(sel);
   const views = {
-    left:  { el: $(".half--left"),  canvas: $(".half--left canvas"),  shade: $(".half--left .shade") },
-    right: { el: $(".half--right"), canvas: $(".half--right canvas"), shade: $(".half--right .shade") },
-    front: { el: $(".face--front"), canvas: $(".face--front canvas"), shade: $(".face--front .shade") },
-    back:  { el: $(".face--back"),  canvas: $(".face--back canvas"),  shade: $(".face--back .shade") },
+    left:  { canvas: $(".half--left canvas"),  shade: $(".half--left .shade") },
+    right: { canvas: $(".half--right canvas"), shade: $(".half--right .shade") },
+    front: { canvas: $(".face--front canvas"), shade: $(".face--front .shade") },
+    back:  { canvas: $(".face--back canvas"),  shade: $(".face--back .shade") },
   };
   const leaf = $(".leaf");
   Object.values(views).forEach((v) => {
-    v.ctx = v.canvas.getContext("2d", { alpha: false });
+    v.ctx = v.canvas.getContext("2d");
     v.src = null; // { page, side: "L" | "R" }
   });
 
@@ -127,13 +170,15 @@
   /* ---------- Motor del pliegue ---------- */
 
   let step = 0;
-  // flip = { from, to, dir, p, anim: { p0, p1, t0, dur, ease } | null, dragging }
+  // flip = { from, to, dir, p, anim: { p0, p1, t0, dur, ease } | null }
   let flip = null;
 
   const easeInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
   const easeOut = (x) => 1 - Math.pow(1 - x, 3);
 
   function setStatic(page) {
+    // el video de la página actual queda arriba (respaldo mientras el canvas no dibuja)
+    videos.forEach((v, i) => (v.style.zIndex = i === page ? 1 : 0));
     views.left.src = { page, side: "L" };
     views.right.src = { page, side: "R" };
     views.left.shade.style.opacity = 0;
@@ -164,7 +209,7 @@
     drawView(views.front);
     drawView(views.back);
     leaf.style.visibility = "visible";
-    flip = { from, to, dir, p: 0, anim: null, dragging: false };
+    flip = { from, to, dir, p: 0, anim: null };
     applyFlip();
     return flip;
   }
@@ -173,7 +218,7 @@
     const { p, dir } = flip;
     const angle = 180 * p * (dir > 0 ? -1 : 1);
     // la hoja se levanta un poco al pasar por el medio
-    const lift = Math.sin(Math.PI * p) * 30;
+    const lift = Math.sin(Math.PI * p) * 40;
     leaf.style.transform = `translateZ(${lift}px) rotateY(${angle}deg)`;
 
     const revealed = dir > 0 ? views.right : views.left;
@@ -193,30 +238,31 @@
   }
 
   function endFlip() {
-    const done = flip.p >= 1;
-    if (done) step = flip.to;
+    if (flip.p >= 1) step = flip.to;
     setStatic(step);
     flip = null;
-    renderUI();
+    setUI(step);
   }
 
   function goTo(next) {
     if (flip || next === step || next < 0 || next >= total) return;
     beginFlip(next > step ? 1 : -1);
     setUI(flip.to);
-    playFlip();
+    audio.playFlip();
     animateTo(1);
   }
 
   /* ---------- Textos, puntos y botón ---------- */
 
+  let shownStep = -1;
   function setUI(s) {
     root.dataset.step = s;
-    copies.forEach((c, i) => c.classList.toggle("is-active", i === s));
     dots.forEach((d, i) => d.setAttribute("aria-selected", String(i === s)));
     startBtn.tabIndex = s === total - 1 ? 0 : -1;
+    if (s === shownStep) return; // no reiniciar la animación de letras
+    shownStep = s;
+    copies.forEach((c, i) => c.classList.toggle("is-active", i === s));
   }
-  const renderUI = () => setUI(step);
 
   /* ---------- Bucle de dibujo ---------- */
 
@@ -240,12 +286,11 @@
     requestAnimationFrame(frame);
   }
 
-  /* ---------- Arrastre con el dedo ---------- */
+  /* ---------- Arrastre con el dedo (en toda la pantalla) ---------- */
 
   let drag = null; // { x0, y0, id, lastX, lastT, v, active }
 
   root.addEventListener("pointerdown", (e) => {
-    unlockAudio();
     videos.forEach((v) => v.paused && v.play().catch(() => {}));
     if (flip) return;
     drag = { x0: e.clientX, y0: e.clientY, id: e.pointerId, lastX: e.clientX, lastT: e.timeStamp, v: 0, active: false };
@@ -259,7 +304,6 @@
     if (!drag.active) {
       if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
       if (!beginFlip(dx < 0 ? 1 : -1)) { drag = null; return; }
-      flip.dragging = true;
       drag.active = true;
       root.setPointerCapture?.(e.pointerId);
     }
@@ -278,21 +322,19 @@
     if (!drag || e.pointerId !== drag.id) return;
     const wasActive = drag.active;
     const v = drag.v;
-    const onStage = stage.contains(e.target) || e.target === stage;
     drag = null;
 
     if (!wasActive) {
-      // toque simple sobre el video: siguiente página
-      if (e.type === "pointerup" && onStage) goTo(step + 1);
+      // toque simple fuera de los botones: siguiente página
+      if (e.type === "pointerup" && !e.target.closest("button")) goTo(step + 1);
       return;
     }
 
-    flip.dragging = false;
     const flick = -v * flip.dir; // velocidad a favor del pase
     const complete = flip.p > 0.4 || (flick > 0.35 && flip.p > 0.04);
     if (complete) {
       setUI(flip.to);
-      playFlip(0.6 + 0.4 * (1 - flip.p));
+      audio.playFlip(0.6 + 0.4 * (1 - flip.p));
       animateTo(1, easeOut);
     } else {
       animateTo(0, easeOut);
@@ -303,10 +345,10 @@
 
   /* ---------- Otros controles ---------- */
 
-  dots.forEach((d) => d.addEventListener("click", () => { unlockAudio(); goTo(Number(d.dataset.go)); }));
+  dots.forEach((d) => d.addEventListener("click", () => goTo(Number(d.dataset.go))));
 
   document.addEventListener("keydown", (e) => {
-    unlockAudio();
+    audio.unlock();
     if (e.key === "ArrowRight") goTo(step + 1);
     if (e.key === "ArrowLeft") goTo(step - 1);
   });
@@ -321,12 +363,17 @@
     v.play().catch(() => {});
   });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) videos.forEach((v) => v.play().catch(() => {}));
+    if (document.hidden) {
+      audio.stopMusic();
+    } else {
+      videos.forEach((v) => v.play().catch(() => {}));
+      if (musicOn) audio.startMusic();
+    }
   });
 
   window.addEventListener("resize", resize);
   resize();
   setStatic(step);
-  renderUI();
+  setUI(step);
   requestAnimationFrame(frame);
 })();

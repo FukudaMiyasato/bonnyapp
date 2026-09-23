@@ -9,11 +9,13 @@
   --brown: #5b3a26;
   --coral: #cc6450;
   --coral-dark: #b4533f;
-  --dot-off: #d9d3cd;
+  --dot-off: rgba(251, 244, 238, 0.85);
+  --backdrop: #e6d3bf;
 
-  --w: min(100vw, 480px);      /* ancho real del teléfono */
-  --fade: 500ms;
-  --ease-page: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --app-w: min(100vw, 480px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --fade: 220ms;
 }
 
 * { box-sizing: border-box; }
@@ -24,40 +26,39 @@ html, body {
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;
-  -webkit-text-size-adjust: 100%;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  background: var(--cream);
+  background: var(--backdrop);
   color: var(--brown);
   font-family: "Bungee", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
-}
-
-.onboarding {
-  position: relative;
-  width: var(--w);
-  height: 100vh;
-  height: 100dvh;
-  margin: 0 auto;
-  overflow: hidden;
-  background: var(--cream);
-  display: flex;
-  flex-direction: column;
-  touch-action: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   user-select: none;
 }
 
-/* ---------- Videos + pliegue desde el centro ---------- */
+/* Ocupa toda la pantalla, incluida la zona de la cámara / barra de estado */
+.onboarding {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: var(--app-w);
+  height: 100vh;
+  height: 100lvh;
+  overflow: hidden;
+  background: var(--backdrop);
+  touch-action: none;
+}
+
+/* ---------- Video a pantalla completa + pliegue desde el centro ---------- */
 
 .stage {
-  position: relative;
-  z-index: 1;
-  flex: 0 0 auto;
-  height: 58dvh;
-  perspective: 1400px;
-  perspective-origin: 50% 45%;
-  background: #e9ddd2;
+  position: absolute;
+  inset: 0;
+  perspective: 1800px;
+  perspective-origin: 50% 50%;
 }
 
 /* Los videos reales quedan debajo de los canvas y solo los alimentan
@@ -74,6 +75,7 @@ html, body {
 .half,
 .leaf {
   position: absolute;
+  z-index: 2;
   top: 0;
   bottom: 0;
   width: 50%;
@@ -133,114 +135,142 @@ html, body {
     rgba(0, 0, 0, .18) 100%);
 }
 
-/* ---------- Hoja inferior ---------- */
+/* ---------- Capa de interfaz ---------- */
 
-.sheet {
-  position: relative;
-  z-index: 2;
-  flex: 1 1 auto;
+.ui {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  margin-top: calc(var(--w) * -0.12);
-  background: linear-gradient(to bottom, transparent calc(var(--w) * 0.2), var(--cream) 0);
-  padding-bottom: max(28px, calc(env(safe-area-inset-bottom) + 12px));
-}
-
-.sheet__wave {
-  display: block;
-  width: 100%;
-  height: auto;
-  fill: var(--cream);
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 20px calc(var(--safe-bottom) + 7dvh);
   pointer-events: none;
 }
+.ui > * { pointer-events: auto; }
 
-.dots {
-  position: absolute;
-  top: calc(var(--w) * 0.05);
-  left: 50%;
-  transform: translateX(-50%);
+/* Cofre con transparencia leve */
+.card {
+  position: relative;
+  width: min(80vw, 350px);
+  aspect-ratio: 825 / 631;
   display: flex;
-  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  padding: 17% 11% 7%;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("assets/img/bgcofre-v2.png") center / 100% 100% no-repeat;
+  opacity: 0.88;
+  filter: drop-shadow(0 10px 24px rgba(60, 30, 15, 0.18));
 }
 
-.dot {
-  width: 24px;
-  height: 12px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: var(--dot-off);
-  cursor: pointer;
-  transition: background-color var(--fade) ease, width var(--fade) ease;
-}
-.dot[aria-selected="true"] { background: var(--coral); }
-
-/* ---------- Textos (cambian con transparencia) ---------- */
+/* ---------- Textos: aparecen letra por letra ---------- */
 
 .copy {
+  position: relative;
   display: grid;
-  margin-top: calc(var(--w) * -0.14);
-  padding: 0 28px;
+  width: 100%;
   text-align: center;
 }
 
 .copy__item {
   grid-area: 1 / 1;
+  align-self: center;
   opacity: 0;
   transition: opacity var(--fade) ease;
   pointer-events: none;
 }
 .copy__item.is-active {
   opacity: 1;
-  transition-delay: calc(var(--fade) * 0.6);
+  transition: none;
   pointer-events: auto;
 }
 
 .copy h1 {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
   font-weight: 400;
-  font-size: clamp(24px, calc(var(--w) * 0.078), 36px);
-  line-height: 1.05;
+  font-size: clamp(20px, calc(var(--app-w) * 0.066), 28px);
+  line-height: 1.08;
   letter-spacing: 0.01em;
 }
 
 .copy p {
   margin: 0 auto;
-  max-width: 22ch;
-  font-size: clamp(14px, calc(var(--w) * 0.042), 18px);
-  line-height: 1.45;
+  max-width: 24ch;
+  font-size: clamp(11px, calc(var(--app-w) * 0.034), 14px);
+  line-height: 1.5;
   opacity: 0.92;
 }
 
 .copy mark {
   color: var(--coral);
-  background: linear-gradient(to top, rgba(204, 100, 80, 0.18) 38%, transparent 38%);
-  padding: 0 2px;
-  border-radius: 3px;
+  background: none;
 }
+
+.copy .w { display: inline-block; white-space: nowrap; }
+.copy .ch {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.45em) scale(0.85);
+}
+.copy__item.is-active .ch {
+  animation: ch-in 300ms cubic-bezier(0.2, 0.9, 0.3, 1.25) forwards;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes ch-in {
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Puntos ---------- */
+
+.dots {
+  display: flex;
+  gap: 14px;
+  margin: 22px 0 26px;
+}
+
+.dot {
+  width: 26px;
+  height: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--dot-off);
+  box-shadow: 0 1px 4px rgba(60, 30, 15, 0.25);
+  cursor: pointer;
+  transition: background-color 400ms ease;
+}
+.dot[aria-selected="true"] { background: var(--coral); }
 
 /* ---------- Botón Empezar ---------- */
 
 .actions {
-  margin-top: auto;
-  padding: 24px 24px 0;
+  width: 100%;
 }
 
 .btn-start {
   display: block;
   width: 100%;
-  height: 62px;
+  height: 60px;
   border: 0;
   border-radius: 999px;
   background: var(--coral);
   color: var(--cream);
   font: inherit;
-  font-size: 20px;
+  font-size: 19px;
   letter-spacing: 0.04em;
   cursor: pointer;
   box-shadow:
     inset 0 -3px 0 rgba(0, 0, 0, 0.1),
-    0 6px 14px rgba(180, 83, 63, 0.28);
+    0 6px 16px rgba(120, 50, 30, 0.35);
 
   opacity: 0;
   transform: translateY(18px);
@@ -256,6 +286,149 @@ html, body {
   transition-delay: 450ms;
 }
 
+/* ---------- Filtro de nostalgia ---------- */
+
+/* Cada capa va suelta en <body> (fixed) para que su mix-blend-mode
+   se mezcle con el video y no quede aislada en un contenedor */
+.fx {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+}
+.fx__matte,
+.fx__tint,
+.fx__vignette {
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: var(--app-w);
+  height: 100lvh;
+}
+
+/* Luces que se filtran (light leaks) */
+.fx__leak {
+  width: 130vmax;
+  height: 130vmax;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  will-change: transform, opacity;
+}
+.fx__leak--a {
+  top: -75vmax;
+  left: -70vmax;
+  background: radial-gradient(circle, rgba(255, 164, 92, 0.55) 0%, rgba(255, 120, 70, 0.18) 35%, transparent 62%);
+  animation: leak-a 17s ease-in-out infinite alternate;
+}
+.fx__leak--b {
+  top: -20vmax;
+  right: -90vmax;
+  background: radial-gradient(circle, rgba(255, 210, 150, 0.45) 0%, rgba(255, 150, 110, 0.14) 38%, transparent 62%);
+  animation: leak-b 23s ease-in-out infinite alternate;
+}
+.fx__leak--c {
+  bottom: -85vmax;
+  left: -30vmax;
+  background: radial-gradient(circle, rgba(255, 128, 110, 0.35) 0%, rgba(255, 170, 120, 0.12) 40%, transparent 62%);
+  animation: leak-c 29s ease-in-out infinite alternate;
+}
+@keyframes leak-a {
+  0%   { transform: translate(0, 0) scale(1);        opacity: 0.55; }
+  40%  { transform: translate(8vmax, 6vmax) scale(1.1); opacity: 0.9; }
+  100% { transform: translate(3vmax, 14vmax) scale(0.95); opacity: 0.6; }
+}
+@keyframes leak-b {
+  0%   { transform: translate(0, 0) scale(1);          opacity: 0.35; }
+  50%  { transform: translate(-10vmax, 10vmax) scale(1.08); opacity: 0.75; }
+  100% { transform: translate(-4vmax, -6vmax) scale(1);   opacity: 0.45; }
+}
+@keyframes leak-c {
+  0%   { transform: translate(0, 0);          opacity: 0.3; }
+  100% { transform: translate(12vmax, -8vmax); opacity: 0.6; }
+}
+
+/* Acabado mate: negros levantados y tono cálido */
+.fx__matte {
+  background: #2a1c15;
+  mix-blend-mode: lighten;
+  opacity: 0.9;
+}
+/* Tono cálido de foto vieja */
+.fx__tint {
+  background: linear-gradient(170deg, rgba(255, 196, 140, 0.4), rgba(120, 80, 140, 0.2));
+  mix-blend-mode: soft-light;
+}
+
+/* Grano de película */
+.fx__grain {
+  inset: -50%;
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.18 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation: grain 0.9s steps(6) infinite;
+}
+@keyframes grain {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-3%, 2%); }
+  40%  { transform: translate(2%, -4%); }
+  60%  { transform: translate(-4%, -1%); }
+  80%  { transform: translate(3%, 3%); }
+  100% { transform: translate(0, 0); }
+}
+
+.fx__vignette {
+  background: radial-gradient(ellipse 85% 75% at 50% 45%, transparent 55%, rgba(60, 30, 15, 0.32) 100%);
+}
+
+/* ---------- Botón de música ---------- */
+
+.music {
+  position: fixed;
+  z-index: 30;
+  /* margen para no chocar con la cámara / barra de estado */
+  top: calc(var(--safe-top) + 14px);
+  right: max(calc(env(safe-area-inset-right, 0px) + 14px), calc((100vw - 480px) / 2 + 14px));
+  width: 72px;
+  height: 72px;
+  padding: 2px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: opacity 300ms ease, filter 300ms ease;
+}
+.music img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 5px rgba(60, 30, 15, 0.3));
+}
+.music[aria-pressed="true"] img {
+  animation: bob 1.6s ease-in-out infinite;
+}
+.music[aria-pressed="false"] {
+  opacity: 0.7;
+  filter: saturate(0.35);
+}
+@keyframes bob {
+  0%, 100% { transform: rotate(-4deg) translateY(0); }
+  50%      { transform: rotate(4deg) translateY(-2px); }
+}
+
+/* Notas musicales que salen del botón */
+.note {
+  position: fixed;
+  z-index: 29;
+  pointer-events: none;
+  font-family: "Apple Symbols", "Segoe UI Symbol", "Noto Music", serif;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgba(60, 30, 15, 0.35);
+  will-change: transform, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .copy__item, .btn-start { transition-duration: 1ms; }
+  .copy__item.is-active .ch { animation-duration: 1ms; animation-delay: 0ms; }
+  .fx__leak, .fx__grain { animation: none; }
+  .btn-start { transition-duration: 1ms; }
 }
