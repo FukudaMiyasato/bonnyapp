@@ -13,7 +13,7 @@
   const view = document.querySelector(".chest-view");
   const scroller = view.querySelector(".cv-scroll");
   const cvChest = view.querySelector(".cv-chest");
-  const backBtn = view.querySelector(".cv-back");
+  const backBtns = [...view.querySelectorAll(".cv-back")];
   const cvTitle = view.querySelector(".cv-title");
   const titleInput = view.querySelector(".cv-title-input");
   const editBtn = view.querySelector(".cv-edit");
@@ -109,13 +109,13 @@
   }
 
   // Un cofre que viaja entre la repisa y el baúl abierto, por encima de todo
-  async function flyChest(fromEl, toEl, color, duration = 650) {
+  async function flyChest(fromEl, toEl, color, duration = 650, active = false) {
     const a = boxOf(fromEl).getBoundingClientRect();
     const b = boxOf(toEl).getBoundingClientRect();
     const clone = document.createElement("div");
-    clone.className = "chest fly";
+    clone.className = `chest fly${active ? " is-active" : ""}`;
     Object.assign(clone.style, { left: a.left + "px", top: a.top + "px", width: a.width + "px", transformOrigin: "0 0" });
-    clone.innerHTML = boxHTML(color);
+    clone.innerHTML = boxHTML(color, active);
     flying.appendChild(clone);
     const s = b.width / a.width;
     const dx = b.left - a.left;
@@ -161,12 +161,6 @@
 
   /* ---------- Baúl abierto ---------- */
 
-  const miniHTML = (integrante, rot) => `
-    <div class="mini__card" style="--r:${rot}deg">
-      <img class="mini__photo" src="${integrante.foto}" alt="Integrante" />
-      <img class="mini__frame" src="assets/img/photo-mini.webp" alt="" draggable="false" />
-    </div>`;
-
   const openBaul = () => data.baules.find((b) => b.id === openId);
 
   // Copia de una foto en la capa superior, para que nada la recorte al volar
@@ -186,10 +180,12 @@
   };
 
   function fillView(baul) {
-    cvTitle.textContent = baul.nombre;
+    cvTitle.textContent = "";
     cvTitle.hidden = false;
     titleInput.hidden = true;
-    cvChest.innerHTML = boxHTML(baul.color);
+    const isActive = data.baulActivo?.id === baul.id;
+    cvChest.innerHTML = boxHTML(baul.color, true);
+    cvChest.classList.toggle("is-active", isActive);
     colorBtns.forEach((b) => b.setAttribute("aria-checked", String(b.dataset.color === baul.color)));
     activateBtn.classList.toggle("is-hidden", data.baulActivo?.id === baul.id);
     resetDelete();
@@ -201,7 +197,8 @@
       card.type = "button";
       card.className = "cv-card";
       card.setAttribute("aria-label", "Ver foto");
-      card.innerHTML = miniHTML(f, (Math.random() * 12 - 6).toFixed(1));
+      card.dataset.id = f.id;
+      card.innerHTML = window.BonnyPolaroid.html(f, (Math.random() * 12 - 6).toFixed(1));
       card.addEventListener("click", () => { if (!busy) Lightbox.open(card); });
       grid.appendChild(card);
     });
@@ -219,7 +216,7 @@
     const cards = [...grid.children];
     cards.forEach((c) => (c.style.visibility = "hidden"));
     cvChest.classList.add("is-hidden");
-    view.classList.remove("is-leaving");
+    view.classList.remove("is-leaving", "is-compact");
     view.hidden = false;
     scroller.scrollTop = 0;
     void view.offsetWidth;
@@ -229,9 +226,11 @@
     // el cofre sube a la esquina superior izquierda del baúl abierto
     shelfEl.style.visibility = "hidden";
     audio.playFlip(0.35);
-    const clone = await flyChest(shelfEl, cvChest, baul.color);
+    const active = data.baulActivo?.id === baul.id;
+    const clone = await flyChest(shelfEl, cvChest, baul.color, 650, active);
     cvChest.classList.remove("is-hidden");
     clone.remove();
+    typeTitle(baul.nombre);
 
     // se abre y las fotos salen hacia su lugar
     cvChest.classList.add("is-open");
@@ -271,7 +270,9 @@
     if (busy || !openId) return;
     commitTitle();
     busy = true;
+    stopTyping();
     const baul = openBaul();
+    cvTitle.textContent = baul.nombre;
 
     // el cofre se abre y las fotos vuelven a entrar
     cvChest.classList.add("is-open");
@@ -311,7 +312,7 @@
     shelfEl.style.visibility = "hidden";
     shelfEl.scrollIntoView({ block: "nearest" });
     cvChest.classList.add("is-hidden");
-    const clone = await flyChest(cvChest, shelfEl, baul.color, 600);
+    const clone = await flyChest(cvChest, shelfEl, baul.color, 600, data.baulActivo?.id === baul.id);
     shelfEl.style.visibility = "";
     clone.remove();
     bounce(shelfEl);
@@ -322,7 +323,8 @@
 
   function finishView() {
     view.hidden = true;
-    view.classList.remove("is-visible", "is-leaving", "is-empty");
+    view.classList.remove("is-visible", "is-leaving", "is-empty", "is-compact");
+    cvChest.classList.remove("is-active");
     grid.innerHTML = "";
     cvChest.innerHTML = "";
     cvChest.classList.remove("is-hidden");
@@ -330,12 +332,41 @@
     document.dispatchEvent(new CustomEvent("bonny:chest", { detail: { open: false } }));
   }
 
-  backBtn.addEventListener("click", closeChest);
+  backBtns.forEach((b) => b.addEventListener("click", closeChest));
+
+  // al bajar, la cabecera se compacta y "regresar" pasa a la parte inferior
+  scroller.addEventListener("scroll", () => {
+    view.classList.toggle("is-compact", scroller.scrollTop > 24);
+  }, { passive: true });
+
+  /* ---------- Título que se escribe letra por letra ---------- */
+
+  let typing = null;
+  function stopTyping() {
+    clearTimeout(typing);
+    typing = null;
+    cvTitle.classList.remove("is-typing");
+  }
+  function typeTitle(text) {
+    stopTyping();
+    const chars = [...text];
+    let i = 0;
+    cvTitle.textContent = "";
+    cvTitle.classList.add("is-typing");
+    const next = () => {
+      cvTitle.textContent = chars.slice(0, ++i).join("");
+      if (i % 2) audio.playTick();
+      if (i < chars.length) typing = setTimeout(next, 45 + Math.random() * 45);
+      else typing = setTimeout(stopTyping, 600);
+    };
+    typing = setTimeout(next, 120);
+  }
 
   /* ---------- Editar título ---------- */
 
   function startEdit() {
     if (!openId || busy) return;
+    stopTyping();
     titleInput.value = openBaul().nombre;
     cvTitle.hidden = true;
     titleInput.hidden = false;
@@ -380,6 +411,7 @@
     if (!openId) return;
     data.activarBaul(openId);
     markActive();
+    cvChest.classList.add("is-active"); // aparece la etiqueta también arriba
     activateBtn.classList.add("is-hidden");
     bounce(cvChest);
     audio.playPop();
@@ -464,120 +496,117 @@
     }
   }
 
-  /* ---------- Foto ampliada con zoom de dos dedos ---------- */
+  /* ---------- Foto ampliada: con marco, zoom y giro con dos dedos ---------- */
 
   const Lightbox = (() => {
     const box = document.querySelector(".lightbox");
     const stage = box.querySelector(".lightbox__stage");
-    const img = box.querySelector(".lightbox__img");
+    const card = box.querySelector(".lightbox__card");
     const closeBtn = box.querySelector(".lightbox__close");
-    let card = null;
-    let base = null;            // posición/tamaño de la foto sin zoom
-    let s = 1, tx = 0, ty = 0;  // zoom y desplazamiento
+    const ASPECT = 1023 / 1206; // proporción del marco polaroid
+    let source = null;          // la tarjeta del baúl que se amplió
+    let base = null;            // posición y tamaño sin zoom
+    let s = 1, r = 0, tx = 0, ty = 0;
     const pointers = new Map();
     let pinch = null;
     let lastTap = 0;
 
-    const apply = () => {
-      img.style.transform = `translate(${base.x + tx}px, ${base.y + ty}px) scale(${s})`;
-    };
+    // transform con origen en el centro: translate(esquina) rotate scale
+    const tf = (x, y, rot, sc) => `translate(${x}px, ${y}px) rotate(${rot}deg) scale(${sc})`;
+    const apply = () => { card.style.transform = tf(base.x + tx, base.y + ty, r, s); };
 
     function fit() {
       const W = stage.clientWidth, H = stage.clientHeight;
-      const aspect = img.naturalWidth / img.naturalHeight || 863 / 759;
-      let w = W * 0.94, h = w / aspect;
-      if (h > H * 0.78) { h = H * 0.78; w = h * aspect; }
+      let w = W * 0.86, h = w / ASPECT;
+      if (h > H * 0.8) { h = H * 0.8; w = h * ASPECT; }
       base = { w, h, x: (W - w) / 2, y: (H - h) / 2 };
-      img.style.width = w + "px";
-      img.style.height = h + "px";
+      card.style.width = w + "px";
+      card.style.height = h + "px";
     }
 
-    function photoRect() {
-      return card.querySelector(".mini__photo").getBoundingClientRect();
+    // transform para que la tarjeta ocupe exactamente el lugar de la mini
+    function fromSource() {
+      const rc = source.getBoundingClientRect();
+      const st = stage.getBoundingClientRect();
+      const k = rc.width / base.w;
+      const x = rc.left - st.left - (base.w * (1 - k)) / 2;
+      const y = rc.top - st.top - (base.h * (1 - k)) / 2;
+      const rot = parseFloat(source.querySelector(".mini__card").style.getPropertyValue("--r")) || 0;
+      return tf(x, y, rot, k);
     }
 
-    async function open(c) {
-      card = c;
-      img.src = c.querySelector(".mini__photo").src;
+    function open(c) {
+      source = c;
+      const integrante = data.integrante(c.dataset.id);
+      if (!integrante) return;
+      card.innerHTML = window.BonnyPolaroid.html(integrante, 0);
       box.hidden = false;
-      await img.decode().catch(() => {});
       fit();
-      s = 1; tx = 0; ty = 0;
+      s = 1; r = 0; tx = 0; ty = 0;
       apply();
       void box.offsetWidth;
       box.classList.add("is-visible");
-      // crece desde la mini foto
-      const r = photoRect();
-      const st = stage.getBoundingClientRect();
-      img.animate(
-        [
-          { transform: `translate(${r.left - st.left}px, ${r.top - st.top}px) scale(${r.width / base.w})` },
-          { transform: `translate(${base.x}px, ${base.y}px) scale(1)` },
-        ],
-        { duration: 380, easing: "cubic-bezier(0.2, 0.9, 0.3, 1.05)" }
-      );
-      card.style.visibility = "hidden";
+      card.animate([{ transform: fromSource() }, { transform: card.style.transform }], {
+        duration: 420, easing: "cubic-bezier(0.2, 0.9, 0.3, 1.05)",
+      });
+      source.style.visibility = "hidden";
     }
 
     async function close() {
       if (box.hidden) return;
       box.classList.remove("is-visible");
-      const r = photoRect();
-      const st = stage.getBoundingClientRect();
-      img.animate(
-        [
-          { transform: img.style.transform },
-          { transform: `translate(${r.left - st.left}px, ${r.top - st.top}px) scale(${r.width / base.w})` },
-        ],
-        { duration: 320, easing: "cubic-bezier(0.4, 0, 0.3, 1)", fill: "forwards" }
-      );
-      await wait(320);
-      card.style.visibility = "";
-      img.getAnimations().forEach((a) => a.cancel());
+      card.animate([{ transform: card.style.transform }, { transform: fromSource() }], {
+        duration: 340, easing: "cubic-bezier(0.4, 0, 0.3, 1)", fill: "forwards",
+      });
+      await wait(340);
+      source.style.visibility = "";
+      card.getAnimations().forEach((a) => a.cancel());
       box.hidden = true;
-      card = null;
+      card.innerHTML = "";
+      source = null;
     }
 
-    // eje: si la foto cabe, se centra; si es más grande, no deja ver bordes vacíos
-    function clampAxis(t, baseStart, size, view) {
-      const shown = size * s;
-      if (shown <= view) return (view - shown) / 2 - baseStart;
-      return Math.min(-baseStart, Math.max(view - shown - baseStart, t));
+    const rotate = (x, y, deg) => {
+      const a = (deg * Math.PI) / 180;
+      return [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+    };
+    const center = () => [base.x + tx + base.w / 2, base.y + ty + base.h / 2];
+
+    // pone la tarjeta de modo que el punto local q (desde su centro) quede bajo (px, py)
+    function placeAt(px, py, q) {
+      const [ox, oy] = rotate(q[0] * s, q[1] * s, r);
+      tx = px - ox - base.x - base.w / 2;
+      ty = py - oy - base.y - base.h / 2;
+    }
+    function localAt(px, py) {
+      const [cx, cy] = center();
+      const [lx, ly] = rotate(px - cx, py - cy, -r);
+      return [lx / s, ly / s];
     }
 
-    function settle() {
-      if (s < 1) { s = 1; tx = 0; ty = 0; }
-      const from = img.style.transform;
-      tx = clampAxis(tx, base.x, base.w, stage.clientWidth);
-      ty = clampAxis(ty, base.y, base.h, stage.clientHeight);
-      apply();
-      img.animate([{ transform: from }, { transform: img.style.transform }], { duration: 220, easing: "ease-out" });
-    }
+    const stagePoint = (p) => {
+      const st = stage.getBoundingClientRect();
+      return [p.x - st.left, p.y - st.top];
+    };
 
-    function zoomAt(px, py, newS) {
-      // mantiene fijo el punto (px, py) de la pantalla mientras cambia el zoom
-      const ix = (px - base.x - tx) / s;
-      const iy = (py - base.y - ty) / s;
-      s = newS;
-      tx = px - base.x - ix * s;
-      ty = py - base.y - iy * s;
+    function startPinch() {
+      const [a, b] = [...pointers.values()];
+      const [ax, ay] = stagePoint(a), [bx, by] = stagePoint(b);
+      const mx = (ax + bx) / 2, my = (ay + by) / 2;
+      pinch = {
+        dist: Math.hypot(bx - ax, by - ay),
+        angle: (Math.atan2(by - ay, bx - ax) * 180) / Math.PI,
+        s0: s,
+        r0: r,
+        q: localAt(mx, my),
+      };
     }
 
     stage.addEventListener("pointerdown", (e) => {
       try { stage.setPointerCapture(e.pointerId); } catch (_) {}
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pointers.size === 2) {
-        const [a, b] = [...pointers.values()];
-        const st = stage.getBoundingClientRect();
-        pinch = {
-          dist: Math.hypot(a.x - b.x, a.y - b.y),
-          s0: s,
-          mx: (a.x + b.x) / 2 - st.left,
-          my: (a.y + b.y) / 2 - st.top,
-          tx0: tx,
-          ty0: ty,
-        };
-      }
+      card.getAnimations().forEach((a) => a.cancel());
+      if (pointers.size === 2) startPinch();
     });
 
     stage.addEventListener("pointermove", (e) => {
@@ -587,35 +616,45 @@
       pointers.set(e.pointerId, cur);
       if (pointers.size >= 2 && pinch) {
         const [a, b] = [...pointers.values()];
-        const st = stage.getBoundingClientRect();
-        const mx = (a.x + b.x) / 2 - st.left;
-        const my = (a.y + b.y) / 2 - st.top;
-        const ns = Math.max(0.7, Math.min(5, pinch.s0 * (Math.hypot(a.x - b.x, a.y - b.y) / pinch.dist)));
-        s = pinch.s0; tx = pinch.tx0; ty = pinch.ty0;
-        zoomAt(pinch.mx, pinch.my, ns);
-        tx += mx - pinch.mx; // también se puede arrastrar con los dos dedos
-        ty += my - pinch.my;
+        const [ax, ay] = stagePoint(a), [bx, by] = stagePoint(b);
+        s = Math.max(0.6, Math.min(5, pinch.s0 * (Math.hypot(bx - ax, by - ay) / pinch.dist)));
+        r = pinch.r0 + ((Math.atan2(by - ay, bx - ax) * 180) / Math.PI - pinch.angle);
+        placeAt((ax + bx) / 2, (ay + by) / 2, pinch.q); // zoom, giro y arrastre a la vez
         apply();
-      } else if (pointers.size === 1 && s > 1) {
+      } else if (pointers.size === 1 && (s > 1.02 || Math.abs(r) > 0.5)) {
         tx += cur.x - prev.x;
         ty += cur.y - prev.y;
         apply();
       }
     });
 
+    function settle() {
+      const from = card.style.transform;
+      if (s < 1) s = 1;
+      if (Math.abs(r % 360) < 8) r = 0; // casi derecha: se endereza
+      if (s <= 1.02) { tx = 0; ty = 0; }
+      // que el centro no se salga de la pantalla
+      const [cx, cy] = center();
+      const W = stage.clientWidth, H = stage.clientHeight;
+      tx += Math.min(W, Math.max(0, cx)) - cx;
+      ty += Math.min(H, Math.max(0, cy)) - cy;
+      apply();
+      card.animate([{ transform: from }, { transform: card.style.transform }], { duration: 240, easing: "ease-out" });
+    }
+
     function up(e) {
       if (!pointers.has(e.pointerId)) return;
       pointers.delete(e.pointerId);
       if (pointers.size < 2) pinch = null;
       if (pointers.size === 0) {
-        // doble toque: acerca / aleja
-        const now = e.timeStamp;
-        if (e.type === "pointerup" && now - lastTap < 280) {
-          const st = stage.getBoundingClientRect();
-          if (s > 1.05) { s = 1; tx = 0; ty = 0; } else zoomAt(e.clientX - st.left, e.clientY - st.top, 2.5);
+        // doble toque: acerca / vuelve a la normalidad
+        if (e.type === "pointerup" && e.timeStamp - lastTap < 280) {
+          const [px, py] = stagePoint({ x: e.clientX, y: e.clientY });
+          if (s > 1.05 || r !== 0) { s = 1; r = 0; tx = 0; ty = 0; }
+          else { const q = localAt(px, py); s = 2.5; placeAt(px, py, q); }
           lastTap = 0;
         } else {
-          lastTap = now;
+          lastTap = e.timeStamp;
         }
         settle();
       }
@@ -624,7 +663,7 @@
     stage.addEventListener("pointercancel", up);
 
     closeBtn.addEventListener("click", close);
-    window.addEventListener("resize", () => { if (!box.hidden) { fit(); s = 1; tx = 0; ty = 0; apply(); } });
+    window.addEventListener("resize", () => { if (!box.hidden) { fit(); s = 1; r = 0; tx = 0; ty = 0; apply(); } });
 
     return { open };
   })();
@@ -666,6 +705,7 @@
     title.classList.add("is-active");
 
     const el = chestEl(target.id);
+    el.scrollIntoView({ block: "center" }); // el baúl activo se ve a primera vista
     const add = wall.querySelector(".sh-add");
     add.style.opacity = "0";
 

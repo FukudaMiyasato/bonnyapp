@@ -151,15 +151,22 @@
     }
   }
 
-  // tocar el morral lo abre/cierra; deslizarlo hacia abajo lo cierra
+  // tocar el morral lo abre/cierra; deslizarlo hacia arriba lo abre y hacia abajo lo cierra
   let bagSwipe = null;
   let swallowClick = false;
-  bag.addEventListener("pointerdown", (e) => { bagSwipe = e.clientY; });
+  bag.addEventListener("pointerdown", (e) => {
+    bagSwipe = e.clientY;
+    try { bag.setPointerCapture(e.pointerId); } catch (_) {} // sigue el dedo aunque salga del botón
+  });
   bag.addEventListener("pointerup", (e) => {
-    if (bagSwipe !== null && open && e.clientY - bagSwipe > 30) {
-      setOpen(false);
-      swallowClick = true;
-      setTimeout(() => (swallowClick = false), 400);
+    if (bagSwipe !== null) {
+      const dy = e.clientY - bagSwipe;
+      // deslizar hacia arriba abre; hacia abajo cierra
+      if ((!open && dy < -30) || (open && dy > 30)) {
+        setOpen(!open);
+        swallowClick = true;
+        setTimeout(() => (swallowClick = false), 400);
+      }
     }
     bagSwipe = null;
   });

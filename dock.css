@@ -124,6 +124,7 @@
 /* ---------- Morral (botón central) ---------- */
 
 .dock__bag {
+  touch-action: none; /* permite deslizar hacia arriba/abajo sobre el morral */
   left: 50%;
   bottom: calc(var(--B) + var(--app-w) * 0.018);
   width: calc(var(--app-w) * 0.19);

@@ -26,17 +26,17 @@ window.BonnyData = (() => {
 
   /* ---------- Integrantes ---------- */
 
-  /** @type {{ id: string, foto: string, tipo: "persona" | "mascota" | "foto", etiqueta: string | null, fotoOrigen: string, creado: string }[]} */
+  /** @type {{ id: string, foto: string, tipo: "persona" | "mascota" | "foto", etiqueta: string | null, fotoOrigen: string, ubicacion: string | null, creado: string }[]} */
   const integrantes = [];
   const savedIntegrantes = load(KEY, []);
   if (Array.isArray(savedIntegrantes)) integrantes.push(...savedIntegrantes);
 
   const save = () => store(KEY, integrantes);
 
-  /** Agrega un integrante y lo devuelve. `foto` es un dataURL JPEG. */
-  function agregarIntegrante({ foto, etiqueta = null, fotoOrigen }) {
+  /** Agrega un integrante y lo devuelve. `foto` es un dataURL JPEG; `ubicacion`, p. ej. "Lima, Perú". */
+  function agregarIntegrante({ foto, etiqueta = null, fotoOrigen, ubicacion = null }) {
     const tipo = etiqueta === null ? "foto" : etiqueta === "person" ? "persona" : "mascota";
-    const integrante = { id: uid(), foto, tipo, etiqueta, fotoOrigen, creado: new Date().toISOString() };
+    const integrante = { id: uid(), foto, tipo, etiqueta, fotoOrigen, ubicacion, creado: new Date().toISOString() };
     integrantes.push(integrante);
     save();
     document.dispatchEvent(new CustomEvent("bonny:integrante", { detail: integrante }));

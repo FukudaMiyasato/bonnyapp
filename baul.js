@@ -120,6 +120,32 @@
     return c;
   }
 
+  /* ---------- Ubicación (ciudad, país) para escribirla en la foto ---------- */
+
+  let placePromise = null;
+  function loadPlace() {
+    if (placePromise) return placePromise;
+    placePromise = new Promise((resolve) => {
+      if (!navigator.geolocation) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        async ({ coords }) => {
+          try {
+            // geocodificación inversa gratuita, sin clave
+            const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${coords.latitude}&longitude=${coords.longitude}&localityLanguage=es`;
+            const r = await (await fetch(url)).json();
+            const city = r.city || r.locality || r.principalSubdivision;
+            resolve([city, r.countryName].filter(Boolean).join(", ") || null);
+          } catch (_) {
+            resolve(null);
+          }
+        },
+        () => resolve(null),
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 10 * 60 * 1000 }
+      );
+    });
+    return placePromise;
+  }
+
   /* ---------- Cámara ---------- */
 
   let stream = null;
@@ -234,7 +260,11 @@
     shot.getContext("2d").drawImage(canvas, 0, 0);
     win.classList.add("is-shot", "is-developing");
 
-    const [subjects] = await Promise.all([detectSubjects(canvas), wait(1400)]);
+    const [subjects, ubicacion] = await Promise.all([
+      detectSubjects(canvas),
+      Promise.race([loadPlace(), wait(1400).then(() => null)]),
+      wait(1400),
+    ]);
     const photoId = data.nuevoId();
     const split = subjects.length >= 2;
     const nuevos = (split ? subjects : [null]).map((b) => {
@@ -244,6 +274,7 @@
         // con una sola persona/mascota se guarda su etiqueta; sin detección, null
         etiqueta: b ? b.label : subjects[0]?.label ?? null,
         fotoOrigen: photoId,
+        ubicacion,
       });
     });
     photos.push({ id: photoId, full: canvas, integrantes: nuevos.map((i) => i.id) });
@@ -285,13 +316,8 @@
     const el = document.createElement("div");
     el.className = "mini";
     const rot = (Math.random() * 14 - 7).toFixed(1);
-    el.innerHTML = `
-      <div class="mini__card" style="--r:${rot}deg">
-        <img class="mini__photo" alt="Integrante" />
-        <img class="mini__frame" src="assets/img/photo-mini.webp" alt="" draggable="false" />
-      </div>`;
+    el.innerHTML = window.BonnyPolaroid.html(integrante, rot);
     el.dataset.id = integrante.id;
-    el.querySelector(".mini__photo").src = integrante.foto;
     return el;
   }
 
@@ -360,6 +386,7 @@
 
     setTimeout(() => bubble.classList.add("is-active"), 650);
     setTimeout(startCamera, 900);
+    setTimeout(loadPlace, 1600); // pide la ubicación después del permiso de cámara
     setTimeout(() => { onboarding.style.display = "none"; }, 1300);
   }
 

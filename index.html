@@ -14,6 +14,9 @@
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preload" href="assets/fonts/Bungee-Regular.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&display=swap" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="baul.css" />
   <link rel="stylesheet" href="baules.css" />
@@ -114,22 +117,24 @@
     <div class="cv-bg"></div>
     <div class="cv-scroll">
       <header class="cv-head">
-        <div class="chest cv-chest"></div>
-        <div class="cv-info">
-          <button class="cv-back" type="button">regresar</button>
-          <div class="cv-title-row">
-            <h2 class="cv-title"></h2>
-            <input class="cv-title-input" type="text" maxlength="28" enterkeyhint="done" autocomplete="off" hidden />
-            <button class="cv-edit" type="button" aria-label="Cambiar nombre">
-              <img src="assets/img/btn-edit.webp" alt="" draggable="false" />
-            </button>
-          </div>
-          <div class="cv-colors" role="radiogroup" aria-label="Color del baúl">
-            <button class="cv-color" type="button" role="radio" data-color="cafe" style="--c: #b45b2e" aria-label="Color cafe"></button>
-            <button class="cv-color" type="button" role="radio" data-color="crema" style="--c: #fbe6c8" aria-label="Color crema"></button>
-            <button class="cv-color" type="button" role="radio" data-color="verde" style="--c: #77753d" aria-label="Color verde"></button>
-            <button class="cv-color" type="button" role="radio" data-color="azul" style="--c: #578bb3" aria-label="Color azul"></button>
-            <button class="cv-color" type="button" role="radio" data-color="rojo" style="--c: #e0593b" aria-label="Color rojo"></button>
+        <div class="cv-back-wrap"><button class="cv-back" type="button">regresar</button></div>
+        <div class="cv-head__row">
+          <div class="chest cv-chest"></div>
+          <div class="cv-info">
+            <div class="cv-title-row">
+              <h2 class="cv-title"></h2>
+              <input class="cv-title-input" type="text" maxlength="28" enterkeyhint="done" autocomplete="off" hidden />
+              <button class="cv-edit" type="button" aria-label="Cambiar nombre">
+                <img src="assets/img/btn-edit.webp" alt="" draggable="false" />
+              </button>
+            </div>
+            <div class="cv-colors" role="radiogroup" aria-label="Color del baúl">
+              <button class="cv-color" type="button" role="radio" data-color="cafe" style="--c: #b45b2e" aria-label="Color cafe"></button>
+              <button class="cv-color" type="button" role="radio" data-color="crema" style="--c: #fbe6c8" aria-label="Color crema"></button>
+              <button class="cv-color" type="button" role="radio" data-color="verde" style="--c: #77753d" aria-label="Color verde"></button>
+              <button class="cv-color" type="button" role="radio" data-color="azul" style="--c: #578bb3" aria-label="Color azul"></button>
+              <button class="cv-color" type="button" role="radio" data-color="rojo" style="--c: #e0593b" aria-label="Color rojo"></button>
+            </div>
           </div>
         </div>
       </header>
@@ -142,12 +147,14 @@
         <button class="cv-delete" type="button">eliminar</button>
       </footer>
     </div>
+    <!-- al bajar, "regresar" se mueve a la parte inferior -->
+    <button class="cv-back cv-back--bottom" type="button" tabindex="-1">regresar</button>
   </section>
 
   <!-- Foto ampliada (con zoom de dos dedos) -->
   <section class="lightbox" hidden aria-label="Foto ampliada">
     <div class="lightbox__bg"></div>
-    <div class="lightbox__stage"><img class="lightbox__img" alt="Integrante" draggable="false" /></div>
+    <div class="lightbox__stage"><div class="lightbox__card"></div></div>
     <button class="lightbox__close" type="button" aria-label="Cerrar foto">✕</button>
   </section>
 
@@ -213,6 +220,7 @@
   </button>
 
   <script src="data.js"></script>
+  <script src="polaroid.js"></script>
   <script src="audio.js"></script>
   <script src="app.js"></script>
   <script src="baul.js"></script>
