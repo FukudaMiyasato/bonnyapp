@@ -332,6 +332,10 @@
   /* ---------- Otros botones ---------- */
 
   continueBtn.addEventListener("click", () => {
+    if (busy || continueBtn.disabled) return;
+    continueBtn.disabled = true;
+    busy = true;
+    stopCamera();
     scene.dispatchEvent(new CustomEvent("baul:continue", {
       bubbles: true,
       detail: { integrantes: data.integrantes, photos },

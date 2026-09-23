@@ -1,0 +1,315 @@
+/* ============ Escena 3: mis baúles de recuerdos ============ */
+
+.baul.is-leaving {
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+
+.shelves {
+  --chest-w: calc(var(--app-w) * 0.195);
+  --title: #a85b3b;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: var(--app-w);
+  height: 100vh;
+  height: 100lvh;
+  z-index: 11;
+  overflow: hidden;
+  background: linear-gradient(90deg, #fedfcc, #e9d3c7);
+  opacity: 0;
+  transition: opacity 700ms ease;
+}
+.shelves[hidden] { display: none; }
+.shelves.is-in { opacity: 1; }
+
+/* Pared: arriba + repisas repetidas + abajo. Sin scroll salvo que haya
+   tantas repisas que no quepan en la pantalla. */
+.shelves__wall {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+  scrollbar-width: none;
+}
+.shelves__wall::-webkit-scrollbar { display: none; }
+
+.sh-sec {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.sh-top {
+  /* 1131 x 687; más alto si hace falta espacio para la barra de estado */
+  height: max(calc(var(--app-w) * 687 / 1131), calc(var(--safe-top) + 190px));
+  background:
+    url("assets/img/baules_bg_sup.webp") center bottom / 100% auto no-repeat,
+    linear-gradient(90deg, #f4c9ae, #e4bfab);
+}
+
+.sh-rep {
+  height: calc(var(--app-w) * 409 / 1125);
+  background: url("assets/img/baules_bg_rep.webp") center top / 100% 100% no-repeat;
+}
+
+.sh-bottom {
+  flex: 1 0 calc(var(--app-w) * 0.3);
+  background:
+    url("assets/img/baules_bg_inf.webp") center top / 100% auto no-repeat,
+    linear-gradient(90deg, #fedfcc, #e9d3c7);
+}
+
+.shelves__title {
+  position: absolute;
+  top: calc(var(--safe-top) + 22px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-weight: 400;
+  font-size: calc(var(--app-w) * 0.068);
+  line-height: 1.12;
+  text-align: center;
+  color: var(--title);
+}
+
+/* ---------- Fila de cofres sobre la repisa ---------- */
+
+.sh-row {
+  position: absolute;
+  left: 7%;
+  width: 92%;
+  /* los cofres se apoyan en el borde de la repisa de la sección siguiente */
+  bottom: calc(var(--app-w) * -0.006);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: end;
+}
+
+.chest {
+  position: relative;
+  z-index: 2;
+  justify-self: center;
+  width: var(--chest-w);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.chest.is-open { z-index: 6; }
+
+.chest__label {
+  max-width: 115%;
+  margin-bottom: 6px;
+  font-size: calc(var(--app-w) * 0.027);
+  line-height: 1.2;
+  color: var(--title);
+  transition: color 300ms ease;
+}
+.chest.is-active .chest__label { color: var(--coral); }
+
+.chest__box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 493 / 350;
+  perspective: 240px;
+}
+
+/* resplandor del cofre activo */
+.chest__box::after {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -8%;
+  height: 26%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255, 196, 110, 0.75), transparent 70%);
+  opacity: 0;
+  transition: opacity 400ms ease;
+  z-index: -1;
+}
+.chest.is-active .chest__box::after {
+  opacity: 1;
+  animation: glow 2.4s ease-in-out infinite;
+}
+@keyframes glow {
+  0%, 100% { transform: scale(1); opacity: 0.75; }
+  50% { transform: scale(1.12); opacity: 1; }
+}
+
+.chest__glow {
+  position: absolute;
+  left: -40%;
+  right: -40%;
+  bottom: 40%;
+  height: 150%;
+  background: radial-gradient(ellipse at 50% 85%, rgba(255, 222, 150, 0.85), rgba(255, 190, 110, 0.25) 35%, transparent 62%);
+  opacity: 0;
+  transition: opacity 400ms ease;
+  pointer-events: none;
+}
+
+.chest__lid,
+.chest__body {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+.chest__lid {
+  top: 0;
+  left: 1.85%;
+  width: 96.3%;
+  transform-origin: 50% 10%;
+  transition: transform 450ms cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+.chest__body {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+
+/* boca oscura del cofre cuando la tapa se levanta */
+.chest__inside {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  top: 38%;
+  height: 20%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, #241008 45%, #4e2713 72%, transparent 76%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.chest.is-open .chest__lid { transform: translateY(-34%) rotateX(-58deg); }
+.chest.is-open .chest__inside,
+.chest.is-open .chest__glow { opacity: 1; }
+
+/* botón "+" */
+.sh-add {
+  justify-self: center;
+  width: calc(var(--app-w) * 0.097);
+  aspect-ratio: 1;
+  margin-bottom: calc(var(--app-w) * 0.02);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 160ms ease;
+}
+.sh-add img { display: block; width: 100%; height: 100%; pointer-events: none; }
+.sh-add:active { transform: scale(0.9); }
+
+/* ---------- Cofre abierto ---------- */
+
+.chest-view {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chest-view[hidden] { display: none; }
+
+.chest-view__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(70, 35, 18, 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 350ms ease;
+}
+.chest-view.is-visible .chest-view__backdrop { opacity: 1; }
+
+.chest-view__panel {
+  position: relative;
+  width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(var(--safe-top) + 170px) 20px calc(var(--safe-bottom) + 24px);
+}
+
+.chest-view__title {
+  margin: 0 0 18px;
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--cream);
+  text-shadow: 0 2px 6px rgba(60, 25, 10, 0.5);
+  opacity: 0;
+  transition: opacity 300ms ease 150ms;
+}
+.chest-view.is-visible .chest-view__title { opacity: 1; }
+
+.chest-view__grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 6px;
+  max-height: 52dvh;
+  overflow-y: auto;
+  padding: 6px;
+  touch-action: pan-y;
+  scrollbar-width: none;
+}
+.chest-view__grid::-webkit-scrollbar { display: none; }
+
+.cv-card {
+  position: relative;
+  width: calc(var(--app-w) * 0.27);
+  aspect-ratio: 1023 / 1206;
+}
+
+.chest-view__empty {
+  display: none;
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--cream);
+  text-shadow: 0 1px 4px rgba(60, 25, 10, 0.5);
+}
+.chest-view.is-empty .chest-view__empty { display: block; }
+
+.chest-view__close {
+  width: min(70%, 280px);
+  height: 54px;
+  margin-top: 22px;
+  font-size: 17px;
+  opacity: 0;
+  transform: translateY(12px);
+}
+.chest-view.is-visible .chest-view__close {
+  opacity: 1;
+  transform: none;
+  transition-delay: 300ms;
+}
+
+/* ---------- Fotos en vuelo ---------- */
+
+.flying {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  pointer-events: none;
+}
+.fly {
+  position: fixed;
+  will-change: transform, opacity;
+}

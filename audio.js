@@ -175,6 +175,83 @@ window.BonnyAudio = (() => {
     burst(t + dur + 0.02, { type: "highpass", freq: 3500, gain: 0.25, decay: 0.03 });
   }
 
+  /* ---------- Cofre ---------- */
+
+  // bisagra de madera que cruje al abrir
+  function playChestOpen() {
+    if (!ensure()) return;
+    const t = ctx.currentTime + 0.01;
+    const creak = ctx.createOscillator();
+    creak.type = "sawtooth";
+    creak.frequency.setValueAtTime(190, t);
+    creak.frequency.linearRampToValueAtTime(260, t + 0.18);
+    creak.frequency.linearRampToValueAtTime(170, t + 0.45);
+    // vibración irregular de la madera
+    const wobble = ctx.createOscillator();
+    wobble.frequency.value = 23;
+    const wobbleDepth = ctx.createGain();
+    wobbleDepth.gain.value = 35;
+    wobble.connect(wobbleDepth).connect(creak.frequency);
+
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 1300;
+    bp.Q.value = 3;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.09, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    creak.connect(bp).connect(g).connect(out);
+    creak.start(t); wobble.start(t);
+    creak.stop(t + 0.55); wobble.stop(t + 0.55);
+    // brillito mágico al abrirse
+    [1568, 2093, 2637].forEach((f, i) => {
+      const o = ctx.createOscillator();
+      const og = ctx.createGain();
+      o.frequency.value = f;
+      og.gain.setValueAtTime(0.0001, t + 0.25 + i * 0.07);
+      og.gain.exponentialRampToValueAtTime(0.05, t + 0.26 + i * 0.07);
+      og.gain.exponentialRampToValueAtTime(0.0001, t + 0.9 + i * 0.07);
+      o.connect(og).connect(out);
+      o.start(t + 0.25 + i * 0.07);
+      o.stop(t + 1 + i * 0.07);
+    });
+  }
+
+  // tapa de madera que cae
+  function playChestClose() {
+    if (!ensure()) return;
+    const t = ctx.currentTime + 0.01;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.frequency.setValueAtTime(140, t);
+    o.frequency.exponentialRampToValueAtTime(55, t + 0.18);
+    g.gain.setValueAtTime(0.5, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g).connect(out);
+    o.start(t);
+    o.stop(t + 0.25);
+    burst(t, { type: "lowpass", freq: 700, gain: 0.5, decay: 0.08 });
+    burst(t + 0.005, { type: "bandpass", freq: 2200, q: 2, gain: 0.18, decay: 0.03 });
+  }
+
+  // cofre nuevo que aparece en la repisa
+  function playPop() {
+    if (!ensure()) return;
+    const t = ctx.currentTime + 0.01;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(420, t);
+    o.frequency.exponentialRampToValueAtTime(920, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.22, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g).connect(out);
+    o.start(t);
+    o.stop(t + 0.2);
+  }
+
   /* ---------- Música: piano nostálgico y alegre ---------- */
 
   const BPM = 74;
@@ -347,6 +424,9 @@ window.BonnyAudio = (() => {
     playFlip,
     playFlash,
     playPrint,
+    playChestOpen,
+    playChestClose,
+    playPop,
     startMusic,
     stopMusic,
     get musicPlaying() { return playing; },

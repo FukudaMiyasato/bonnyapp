@@ -16,6 +16,7 @@
   <link rel="preload" href="assets/fonts/Bungee-Regular.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="baul.css" />
+  <link rel="stylesheet" href="baules.css" />
 </head>
 <body>
   <main class="onboarding" data-step="0">
@@ -96,6 +97,31 @@
     </div>
   </section>
 
+  <!-- Escena 3: mis baúles de recuerdos (repisas) -->
+  <section class="shelves" hidden aria-label="Mis baúles de recuerdos">
+    <div class="shelves__wall">
+      <div class="sh-sec sh-top">
+        <h1 class="shelves__title">Mis baúles<br />de recuerdos</h1>
+      </div>
+      <!-- aquí se insertan las repisas extra (baules_bg_rep) -->
+      <div class="sh-sec sh-bottom"></div>
+    </div>
+
+    <!-- Cofre abierto: muestra las fotos que guarda -->
+    <section class="chest-view" hidden aria-label="Fotos del baúl">
+      <div class="chest-view__backdrop"></div>
+      <div class="chest-view__panel">
+        <h2 class="chest-view__title"></h2>
+        <div class="chest-view__grid"></div>
+        <p class="chest-view__empty">Este baúl aún no tiene fotos</p>
+        <button class="btn chest-view__close" type="button">cerrar</button>
+      </div>
+    </section>
+  </section>
+
+  <!-- Fotos en vuelo entre escenas -->
+  <div class="flying" aria-hidden="true"></div>
+
   <span class="flash" aria-hidden="true"></span>
 
   <!-- Filtro de nostalgia: luces que se filtran, acabado mate, grano y viñeta -->
@@ -116,5 +142,6 @@
   <script src="audio.js"></script>
   <script src="app.js"></script>
   <script src="baul.js"></script>
+  <script src="baules.js"></script>
 </body>
 </html>
