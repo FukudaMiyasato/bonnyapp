@@ -1,0 +1,350 @@
+/* ============ Escena 2: primer baúl ============ */
+
+/* Salida del onboarding */
+.onboarding.is-leaving {
+  opacity: 0;
+  transform: scale(1.08);
+  filter: blur(8px);
+  pointer-events: none;
+  transition: opacity 900ms ease, transform 1100ms cubic-bezier(0.4, 0, 0.2, 1), filter 900ms ease;
+}
+
+.baul {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: var(--app-w);
+  height: 100vh;
+  height: 100lvh;
+  z-index: 10;
+  overflow: hidden;
+  background: #c8763f;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 900ms ease 150ms;
+}
+.baul[hidden] { display: none; }
+.baul.is-in { opacity: 1; }
+
+.baul__bg {
+  position: absolute;
+  inset: 0;
+  background: url("assets/img/bg-baul.webp") center / cover no-repeat;
+  transform: scale(1.18);
+  transition: transform 1600ms cubic-bezier(0.2, 0.8, 0.2, 1) 100ms;
+}
+.baul.is-in .baul__bg { transform: none; }
+
+.baul__ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* deja espacio arriba para el botón de música */
+  padding: calc(var(--safe-top) + 92px) 20px calc(var(--safe-bottom) + 10px);
+}
+
+/* ---------- Globo de texto (dos niveles) ---------- */
+
+.bubble {
+  --bubble: #fbeee2;
+  position: relative;
+  flex: 0 0 auto;
+  width: min(86%, 340px);
+  font-size: clamp(14px, calc(var(--app-w) * 0.047), 19px);
+  padding: 0.2em 0.9em 0.85em;
+  background: var(--bubble);
+  border-radius: 24px;
+  filter: drop-shadow(0 6px 14px rgba(70, 30, 10, 0.22));
+  opacity: 0;
+  transform: translateY(-24px) scale(0.96);
+}
+/* pestaña superior más angosta */
+.bubble::before {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 9%;
+  top: -1.35em;
+  height: 1.8em;
+  background: var(--bubble);
+  border-radius: 22px 22px 0 0;
+}
+.baul.is-in .bubble {
+  opacity: 1;
+  transform: none;
+  transition: opacity 700ms ease 550ms, transform 800ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 550ms;
+}
+
+.bubble__text {
+  position: relative;
+  margin: -1.05em 0 0;
+  font-weight: 400;
+  font-size: 1em;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--brown);
+}
+
+/* ---------- Cámara ---------- */
+
+.cam {
+  position: relative;
+  flex: 0 0 auto;
+  height: min(39dvh, calc(var(--app-w) * 0.74 * 1206 / 1023));
+  aspect-ratio: 1023 / 1206;
+  margin-top: 16px;
+  opacity: 0;
+  transform: translateY(60px) rotate(-9deg) scale(0.92);
+}
+.baul.is-in .cam {
+  opacity: 1;
+  transform: rotate(-2deg);
+  transition: opacity 600ms ease 750ms, transform 1000ms cubic-bezier(0.2, 0.9, 0.25, 1.12) 750ms;
+}
+
+/* ventana transparente del marco (medida sobre la imagen: 82–944 x 96–854 px) */
+.cam__window {
+  position: absolute;
+  left: 8.02%;
+  top: 7.96%;
+  width: 84.36%;
+  height: 62.94%;
+  border-radius: 2.5% / 2.9%;
+  overflow: hidden;
+  background: #120c09;
+}
+
+.cam__video,
+.cam__shot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cam.is-user .cam__video { transform: scaleX(-1); } /* espejo en cámara frontal */
+
+.cam__shot {
+  opacity: 0;
+  transition: opacity 250ms ease, filter 1000ms ease;
+}
+.cam__window.is-shot .cam__shot { opacity: 1; }
+/* efecto de carga: la foto se "revela" como una polaroid */
+.cam__window.is-developing .cam__shot {
+  filter: sepia(0.9) brightness(0.35) contrast(0.85) blur(6px);
+}
+
+.cam__scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -40%;
+  height: 40%;
+  opacity: 0;
+  background: linear-gradient(to bottom, transparent, rgba(255, 226, 190, 0.35) 55%, rgba(255, 240, 220, 0.55) 60%, transparent);
+  pointer-events: none;
+}
+.cam__window.is-developing .cam__scan {
+  opacity: 1;
+  animation: scan 1.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes scan {
+  to { transform: translateY(350%); }
+}
+
+.cam__status {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--cream);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 250ms ease;
+}
+.cam__status i { font-style: normal; animation: blink 1s infinite; }
+.cam__status i:nth-child(2) { animation-delay: 0.2s; }
+.cam__status i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+.cam__window.is-developing .cam__status { opacity: 1; }
+
+.cam__msg {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18%;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--cream);
+  opacity: 0.85;
+}
+.cam.no-cam .cam__msg { display: flex; }
+.cam.no-cam .cam__window.is-shot .cam__msg { display: none; }
+
+.cam__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cam__shutter,
+.cam__switch {
+  position: absolute;
+  top: 85.5%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transform: translate(-50%, -50%);
+  transition: transform 160ms ease, opacity 250ms ease;
+}
+.cam__shutter img,
+.cam__switch img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+.cam__shutter { left: 50%; width: 21%; }
+.cam__shutter:active { transform: translate(-50%, -50%) scale(0.9); }
+.cam__shutter:disabled { opacity: 0.6; cursor: default; }
+.cam__switch { left: 84%; width: 12%; }
+.cam__switch.is-spinning img { animation: spin 500ms ease; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Integrantes ---------- */
+
+.members {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0 6px;
+}
+
+.members__label {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--cream);
+  text-shadow: 0 1px 4px rgba(70, 30, 10, 0.55);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 500ms ease, transform 500ms ease;
+}
+.members.has-members .members__label { opacity: 1; transform: none; }
+
+.members__row {
+  --mini-h: min(11dvh, 96px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: var(--mini-h);
+  margin-top: 8px;
+}
+
+.mini {
+  position: relative;
+  flex: 0 0 auto;
+  height: 100%;
+  aspect-ratio: 1023 / 1206;
+  margin: 0 calc(var(--mini-h) * -0.05);
+  will-change: transform;
+}
+.mini__card {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--r, 0deg));
+  filter: drop-shadow(0 4px 7px rgba(60, 25, 10, 0.35));
+}
+.mini__photo {
+  position: absolute;
+  left: 8.02%;
+  top: 7.96%;
+  width: 84.36%;
+  height: 62.94%;
+  object-fit: cover;
+  border-radius: 3%;
+  background: #120c09;
+}
+.mini__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Continuar / saltar ---------- */
+
+.baul__actions {
+  flex: 0 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(20px);
+}
+.baul.is-in .baul__actions {
+  opacity: 1;
+  transform: none;
+  transition: opacity 600ms ease 1050ms, transform 700ms ease 1050ms;
+}
+
+.btn-continue:disabled {
+  background: #b87a6c;
+  color: rgba(251, 244, 238, 0.7);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.06);
+  cursor: default;
+  transform: none;
+}
+.btn-continue.is-ready { animation: pop 600ms cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.link-skip {
+  margin-top: 4px;
+  padding: 10px 24px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--cream);
+  text-shadow: 0 1px 4px rgba(70, 30, 10, 0.55);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* ---------- Flash ---------- */
+
+.flash {
+  position: fixed;
+  inset: 0;
+  z-index: 26;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+}

@@ -15,6 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preload" href="assets/fonts/Bungee-Regular.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="baul.css" />
 </head>
 <body>
   <main class="onboarding" data-step="0">
@@ -52,10 +53,50 @@
       </div>
 
       <div class="actions">
-        <button class="btn-start" type="button" tabindex="-1">Empezar</button>
+        <button class="btn btn-start" type="button" tabindex="-1">Empezar</button>
       </div>
     </section>
   </main>
+
+  <!-- Escena 2: primer baúl (foto familiar) -->
+  <section class="baul" hidden aria-label="Primer baúl">
+    <div class="baul__bg"></div>
+    <div class="baul__ui">
+      <div class="bubble">
+        <h2 class="bubble__text">Todo baúl de<br />recuerdos inicia con<br />una foto familiar</h2>
+      </div>
+
+      <div class="cam">
+        <div class="cam__window">
+          <video class="cam__video" autoplay muted playsinline></video>
+          <canvas class="cam__shot"></canvas>
+          <span class="cam__scan"></span>
+          <span class="cam__status">revelando<i>.</i><i>.</i><i>.</i></span>
+          <span class="cam__msg"></span>
+        </div>
+        <img class="cam__frame" src="assets/img/photo-frame.webp" alt="" draggable="false" />
+        <button class="cam__shutter" type="button" aria-label="Tomar foto">
+          <img src="assets/img/btn-shutter.png" alt="" draggable="false" />
+        </button>
+        <button class="cam__switch" type="button" aria-label="Cambiar cámara">
+          <img src="assets/img/btn-switch.png" alt="" draggable="false" />
+        </button>
+        <input class="cam__file" type="file" accept="image/*" hidden />
+      </div>
+
+      <div class="members">
+        <span class="members__label">integrantes</span>
+        <div class="members__row"></div>
+      </div>
+
+      <div class="baul__actions">
+        <button class="btn btn-continue" type="button" disabled>continuar</button>
+        <button class="link-skip" type="button">saltar</button>
+      </div>
+    </div>
+  </section>
+
+  <span class="flash" aria-hidden="true"></span>
 
   <!-- Filtro de nostalgia: luces que se filtran, acabado mate, grano y viñeta -->
   <span class="fx fx__leak fx__leak--a" aria-hidden="true"></span>
@@ -73,5 +114,6 @@
 
   <script src="audio.js"></script>
   <script src="app.js"></script>
+  <script src="baul.js"></script>
 </body>
 </html>

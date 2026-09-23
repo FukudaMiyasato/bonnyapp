@@ -61,6 +61,120 @@ window.BonnyAudio = (() => {
     src.start(t);
   }
 
+  /* ---------- Cámara: flash y polaroid imprimiendo ---------- */
+
+  let noiseBuffer = null;
+  function noise() {
+    if (!noiseBuffer) {
+      const len = ctx.sampleRate * 2;
+      noiseBuffer = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer;
+    return src;
+  }
+
+  // ráfaga de ruido filtrado con envolvente rápida
+  function burst(t, { type = "bandpass", freq = 2000, q = 1, gain = 0.5, attack = 0.002, decay = 0.05 }) {
+    const src = noise();
+    const f = ctx.createBiquadFilter();
+    f.type = type;
+    f.frequency.value = freq;
+    f.Q.value = q;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+    src.connect(f).connect(g).connect(out);
+    src.start(t, Math.random());
+    src.stop(t + attack + decay + 0.05);
+  }
+
+  function playFlash() {
+    if (!ensure()) return;
+    const t = ctx.currentTime + 0.01;
+    // obturador: clic-clac
+    burst(t, { type: "highpass", freq: 3000, gain: 0.7, decay: 0.03 });
+    burst(t + 0.07, { type: "bandpass", freq: 1400, q: 1.5, gain: 0.55, decay: 0.05 });
+    // destello: soplido brillante
+    burst(t + 0.01, { type: "highpass", freq: 5200, gain: 0.22, attack: 0.004, decay: 0.3 });
+    // golpe grave del mecanismo
+    const thump = ctx.createOscillator();
+    const tg = ctx.createGain();
+    thump.frequency.setValueAtTime(160, t);
+    thump.frequency.exponentialRampToValueAtTime(60, t + 0.09);
+    tg.gain.setValueAtTime(0.35, t);
+    tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.1);
+    thump.connect(tg).connect(out);
+    thump.start(t);
+    thump.stop(t + 0.12);
+    // zumbido agudo de recarga del flash
+    const whine = ctx.createOscillator();
+    const wg = ctx.createGain();
+    whine.frequency.setValueAtTime(1800, t + 0.15);
+    whine.frequency.exponentialRampToValueAtTime(6200, t + 1.4);
+    wg.gain.setValueAtTime(0.0001, t + 0.15);
+    wg.gain.exponentialRampToValueAtTime(0.022, t + 0.3);
+    wg.gain.exponentialRampToValueAtTime(0.0001, t + 1.45);
+    whine.connect(wg).connect(out);
+    whine.start(t + 0.15);
+    whine.stop(t + 1.5);
+  }
+
+  function playPrint() {
+    if (!ensure()) return;
+    const t = ctx.currentTime + 0.01;
+    const dur = 1.15;
+
+    // motor que expulsa la foto
+    const motor = ctx.createOscillator();
+    motor.type = "sawtooth";
+    motor.frequency.setValueAtTime(95, t);
+    motor.frequency.linearRampToValueAtTime(128, t + 0.25);
+    motor.frequency.linearRampToValueAtTime(122, t + dur);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 900;
+
+    // engranajes: modulación rápida de amplitud
+    const lfo = ctx.createOscillator();
+    lfo.type = "square";
+    lfo.frequency.value = 31;
+    const depth = ctx.createGain();
+    depth.gain.value = 0.35;
+    const am = ctx.createGain(); // oscila entre 0.25 y 0.95
+    am.gain.value = 0.6;
+    lfo.connect(depth).connect(am.gain);
+    const mg = ctx.createGain();
+    mg.gain.setValueAtTime(0.0001, t);
+    mg.gain.exponentialRampToValueAtTime(0.2, t + 0.04);
+    mg.gain.setValueAtTime(0.2, t + dur - 0.08);
+    mg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    motor.connect(lp).connect(am).connect(mg).connect(out);
+
+    // roce del papel saliendo
+    const paper = noise();
+    const pf = ctx.createBiquadFilter();
+    pf.type = "bandpass";
+    pf.frequency.value = 2600;
+    pf.Q.value = 2.5;
+    const pg = ctx.createGain();
+    pg.gain.setValueAtTime(0.0001, t);
+    pg.gain.exponentialRampToValueAtTime(0.07, t + 0.1);
+    pg.gain.setValueAtTime(0.07, t + dur - 0.1);
+    pg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    paper.connect(pf).connect(pg).connect(out);
+
+    motor.start(t); lfo.start(t); paper.start(t);
+    motor.stop(t + dur + 0.05); lfo.stop(t + dur + 0.05); paper.stop(t + dur + 0.05);
+
+    // "clac" final cuando la foto termina de salir
+    burst(t + dur, { type: "bandpass", freq: 900, q: 1.2, gain: 0.45, decay: 0.06 });
+    burst(t + dur + 0.02, { type: "highpass", freq: 3500, gain: 0.25, decay: 0.03 });
+  }
+
   /* ---------- Música: piano nostálgico y alegre ---------- */
 
   const BPM = 74;
@@ -231,6 +345,8 @@ window.BonnyAudio = (() => {
   return {
     unlock: ensure,
     playFlip,
+    playFlash,
+    playPrint,
     startMusic,
     stopMusic,
     get musicPlaying() { return playing; },

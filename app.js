@@ -119,6 +119,8 @@
     });
   }
 
+  window.BonnySplitChars = splitChars; // lo reutiliza la escena del baúl
+
   copies.forEach((item) => {
     const state = { t: 180 }; // espera a que el texto anterior se desvanezca
     splitChars(item.querySelector("h1"), state, 26);
@@ -170,6 +172,7 @@
   /* ---------- Motor del pliegue ---------- */
 
   let step = 0;
+  let stopped = false; // true al salir del onboarding
   // flip = { from, to, dir, p, anim: { p0, p1, t0, dur, ease } | null }
   let flip = null;
 
@@ -245,7 +248,7 @@
   }
 
   function goTo(next) {
-    if (flip || next === step || next < 0 || next >= total) return;
+    if (stopped || flip || next === step || next < 0 || next >= total) return;
     beginFlip(next > step ? 1 : -1);
     setUI(flip.to);
     audio.playFlip();
@@ -267,6 +270,7 @@
   /* ---------- Bucle de dibujo ---------- */
 
   function frame(now) {
+    if (stopped) return;
     if (flip && flip.anim) {
       const a = flip.anim;
       const x = Math.min(1, (now - a.t0) / a.dur);
@@ -291,6 +295,7 @@
   let drag = null; // { x0, y0, id, lastX, lastT, v, active }
 
   root.addEventListener("pointerdown", (e) => {
+    if (stopped) return;
     videos.forEach((v) => v.paused && v.play().catch(() => {}));
     if (flip) return;
     drag = { x0: e.clientX, y0: e.clientY, id: e.pointerId, lastX: e.clientX, lastT: e.timeStamp, v: 0, active: false };
@@ -354,7 +359,11 @@
   });
 
   startBtn.addEventListener("click", () => {
+    if (stopped) return;
+    stopped = true;
     root.dispatchEvent(new CustomEvent("onboarding:done", { bubbles: true }));
+    // libera recursos cuando termina la transición
+    setTimeout(() => videos.forEach((v) => v.pause()), 1400);
   });
 
   // Asegura el loop (iOS a veces pausa videos al volver a la app)
@@ -366,7 +375,7 @@
     if (document.hidden) {
       audio.stopMusic();
     } else {
-      videos.forEach((v) => v.play().catch(() => {}));
+      if (!stopped) videos.forEach((v) => v.play().catch(() => {}));
       if (musicOn) audio.startMusic();
     }
   });
