@@ -179,7 +179,8 @@
 
   /* ---------- Tomar la foto ---------- */
 
-  const photos = []; // { full: canvas, members: canvas[] }
+  const data = window.BonnyData;
+  const photos = []; // fotos tomadas en esta sesión: { id, full: canvas, integrantes: id[] }
   let busy = false;
 
   function flash() {
@@ -234,16 +235,24 @@
     win.classList.add("is-shot", "is-developing");
 
     const [subjects] = await Promise.all([detectSubjects(canvas), wait(1400)]);
-    const crops = subjects.length >= 2
-      ? subjects.map((b) => cropSubject(canvas, b))
-      : [drawTo(canvas, 0, 0, canvas.width, canvas.height)];
-    photos.push({ full: canvas, members: crops });
+    const photoId = data.nuevoId();
+    const split = subjects.length >= 2;
+    const nuevos = (split ? subjects : [null]).map((b) => {
+      const crop = b ? cropSubject(canvas, b) : drawTo(canvas, 0, 0, canvas.width, canvas.height);
+      return data.agregarIntegrante({
+        foto: crop.toDataURL("image/jpeg", 0.85),
+        // con una sola persona/mascota se guarda su etiqueta; sin detección, null
+        etiqueta: b ? b.label : subjects[0]?.label ?? null,
+        fotoOrigen: photoId,
+      });
+    });
+    photos.push({ id: photoId, full: canvas, integrantes: nuevos.map((i) => i.id) });
 
     win.classList.remove("is-developing"); // la foto termina de revelarse
     await wait(450);
 
     audio.playPrint();
-    await addMinis(crops);
+    await addMinis(nuevos);
 
     if (!members.classList.contains("has-members")) {
       members.classList.add("has-members");
@@ -272,7 +281,7 @@
     row.style.setProperty("--mini-h", Math.max(48, Math.min(base, perW)) + "px");
   }
 
-  function makeMini(canvas) {
+  function makeMini(integrante) {
     const el = document.createElement("div");
     el.className = "mini";
     const rot = (Math.random() * 14 - 7).toFixed(1);
@@ -281,17 +290,18 @@
         <img class="mini__photo" alt="Integrante" />
         <img class="mini__frame" src="assets/img/photo-mini.webp" alt="" draggable="false" />
       </div>`;
-    el.querySelector(".mini__photo").src = canvas.toDataURL("image/jpeg", 0.85);
+    el.dataset.id = integrante.id;
+    el.querySelector(".mini__photo").src = integrante.foto;
     return el;
   }
 
-  async function addMinis(crops) {
-    for (let i = 0; i < crops.length; i++) {
+  async function addMinis(items) {
+    for (let i = 0; i < items.length; i++) {
       // FLIP: las que ya están se corren suavemente para dejar espacio al centro
       const existing = [...row.children];
       const before = existing.map((el) => el.getBoundingClientRect().left);
 
-      const el = makeMini(crops[i]);
+      const el = makeMini(items[i]);
       row.appendChild(el);
       fitRow(row.children.length);
 
@@ -314,7 +324,7 @@
         ],
         { duration: 950, easing: "cubic-bezier(0.25, 0.8, 0.25, 1)" }
       );
-      await wait(crops.length > 1 ? 260 : 0);
+      await wait(items.length > 1 ? 260 : 0);
     }
     await wait(700);
   }
@@ -324,7 +334,7 @@
   continueBtn.addEventListener("click", () => {
     scene.dispatchEvent(new CustomEvent("baul:continue", {
       bubbles: true,
-      detail: { photos },
+      detail: { integrantes: data.integrantes, photos },
     }));
   });
   // "saltar" no hace nada por ahora
