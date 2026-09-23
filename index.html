@@ -2,22 +2,33 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#fbf4ee" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Bonny" />
   <title>Bonny</title>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preload" href="assets/fonts/Bungee-Regular.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <main class="onboarding" data-step="0">
     <section class="stage" aria-hidden="true">
-      <div class="page" data-index="0">
-        <video src="assets/videos/01loop.mp4" autoplay muted loop playsinline preload="auto"></video>
-        <span class="page__shade"></span>
-      </div>
-      <div class="page" data-index="1">
-        <video src="assets/videos/02loop.mp4" autoplay muted loop playsinline preload="auto"></video>
-        <span class="page__shade"></span>
+      <!-- Videos fuente: se dibujan en las mitades de abajo, así ambas mitades quedan sincronizadas -->
+      <video class="src" src="assets/videos/01loop.mp4" autoplay muted loop playsinline preload="auto"></video>
+      <video class="src" src="assets/videos/02loop.mp4" autoplay muted loop playsinline preload="auto"></video>
+
+      <div class="half half--left"><canvas></canvas><span class="shade"></span></div>
+      <div class="half half--right"><canvas></canvas><span class="shade"></span></div>
+
+      <div class="leaf">
+        <div class="face face--front"><canvas></canvas><span class="shade"></span></div>
+        <div class="face face--back"><canvas></canvas><span class="shade"></span></div>
       </div>
     </section>
 
