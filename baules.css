@@ -60,7 +60,8 @@
 }
 
 .sh-bottom {
-  flex: 1 0 calc(var(--app-w) * 0.3);
+  /* deja espacio para la botonera inferior fija */
+  flex: 1 0 calc(var(--app-w) * 0.34 + var(--safe-bottom));
   background:
     url("assets/img/baules_bg_inf.webp") center top / 100% auto no-repeat,
     linear-gradient(90deg, #fedfcc, #e9d3c7);
@@ -83,8 +84,8 @@
 
 .sh-row {
   position: absolute;
-  left: 7%;
-  width: 92%;
+  left: 4%;
+  width: 92%; /* centrada: 4 lugares iguales con el mismo margen a cada lado */
   /* los cofres se apoyan en el borde de la repisa de la sección siguiente */
   bottom: calc(var(--app-w) * -0.006);
   display: grid;
@@ -264,7 +265,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px 6px;
-  max-height: 52dvh;
+  max-height: 44dvh;
   overflow-y: auto;
   padding: 6px;
   touch-action: pan-y;
@@ -301,6 +302,27 @@
   transition-delay: 300ms;
 }
 
+.chest-view__delete {
+  margin-top: 12px;
+  padding: 10px 22px;
+  border: 2px solid rgba(251, 244, 238, 0.7);
+  border-radius: 999px;
+  background: rgba(70, 35, 18, 0.25);
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--cream);
+  cursor: pointer;
+  touch-action: manipulation;
+  opacity: 0;
+  transition: opacity 300ms ease, background-color 250ms ease, border-color 250ms ease;
+}
+.chest-view.is-visible .chest-view__delete { opacity: 1; transition-delay: 380ms, 0ms, 0ms; }
+.chest-view__delete.is-confirming {
+  background: #b4533f;
+  border-color: #b4533f;
+}
+
 /* ---------- Fotos en vuelo ---------- */
 
 .flying {
@@ -312,4 +334,11 @@
 .fly {
   position: fixed;
   will-change: transform, opacity;
+}
+
+.puff {
+  position: fixed;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 244, 230, 0.95), rgba(230, 200, 175, 0.6) 60%, transparent 70%);
+  pointer-events: none;
 }

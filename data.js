@@ -80,6 +80,15 @@ window.BonnyData = (() => {
     saveBaules();
   }
 
+  /** Quita el baúl (sus integrantes siguen en `integrantes`). */
+  function eliminarBaul(id) {
+    const i = baules.findIndex((b) => b.id === id);
+    if (i < 0) return;
+    baules.splice(i, 1);
+    if (estado.activo === id) estado.activo = baules.length ? baules[baules.length - 1].id : null;
+    saveBaules();
+  }
+
   function activarBaul(id) {
     estado.activo = id;
     saveBaules();
@@ -94,6 +103,7 @@ window.BonnyData = (() => {
     get baulActivo() { return baules.find((b) => b.id === estado.activo) || null; },
     crearBaul,
     guardarEnBaul,
+    eliminarBaul,
     activarBaul,
     nuevoId: uid,
   };

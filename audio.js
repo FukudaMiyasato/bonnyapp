@@ -252,6 +252,23 @@ window.BonnyAudio = (() => {
     o.stop(t + 0.2);
   }
 
+  // clic suave de la rueda al pasar de una posición a otra
+  function playTick() {
+    if (!ensure()) return;
+    const t = ctx.currentTime + 0.005;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(1500, t);
+    o.frequency.exponentialRampToValueAtTime(900, t + 0.03);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    o.connect(g).connect(out);
+    o.start(t);
+    o.stop(t + 0.06);
+  }
+
   /* ---------- Música: piano nostálgico y alegre ---------- */
 
   const BPM = 74;
@@ -427,6 +444,7 @@ window.BonnyAudio = (() => {
     playChestOpen,
     playChestClose,
     playPop,
+    playTick,
     startMusic,
     stopMusic,
     get musicPlaying() { return playing; },

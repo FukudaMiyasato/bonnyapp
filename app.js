@@ -310,7 +310,7 @@
       if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
       if (!beginFlip(dx < 0 ? 1 : -1)) { drag = null; return; }
       drag.active = true;
-      root.setPointerCapture?.(e.pointerId);
+      try { root.setPointerCapture(e.pointerId); } catch (_) {}
     }
 
     const dt = Math.max(1, e.timeStamp - drag.lastT);

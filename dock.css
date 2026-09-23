@@ -1,0 +1,194 @@
+/* ============ Botonera inferior fija ============ */
+
+.dock {
+  --B: var(--safe-bottom);
+  --bar-color: #fff8f2;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  width: var(--app-w);
+  height: calc(var(--app-w) * 0.8 + var(--B));
+  z-index: 13;
+  pointer-events: none;
+  transition: transform 500ms cubic-bezier(0.3, 1.2, 0.4, 1), opacity 400ms ease;
+}
+.dock[hidden] { display: none; }
+/* se esconde mientras hay un cofre abierto */
+.dock.is-away {
+  transform: translateY(35%);
+  opacity: 0;
+}
+.dock.is-away * { pointer-events: none !important; }
+
+/* toques fuera de la rueda cierran el morral */
+.dock-catcher {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  display: none;
+  touch-action: none;
+}
+.dock-catcher.is-on { display: block; }
+
+/* ---------- Barra ---------- */
+
+.dock__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform-origin: 50% 100%;
+  transition: transform 450ms cubic-bezier(0.3, 1.3, 0.5, 1), opacity 300ms ease;
+  pointer-events: none;
+}
+.dock__bar-bg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* relleno bajo la barra para la zona del indicador de inicio */
+.dock__bar::after {
+  content: "";
+  display: block;
+  height: var(--B);
+  margin-top: -1px;
+  background: var(--bar-color);
+}
+
+.dock__btn,
+.dock__bag,
+.wheel__item {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+.dock__btn img,
+.dock__bag img,
+.wheel__item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.dock__btn {
+  left: var(--x);
+  bottom: calc(var(--B) + var(--app-w) * 0.028);
+  width: calc(var(--app-w) * var(--w));
+  transform: translateX(-50%);
+  transition: opacity 300ms ease, transform 200ms ease;
+}
+.dock__btn:active { transform: translateX(-50%) scale(0.9); }
+
+/* ícono de la sección activa: resplandor cálido */
+.dock__btn.is-active::before {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 206, 122, 0.8), rgba(255, 176, 92, 0.28) 42%, transparent 68%);
+  animation: dock-glow 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+.dock__btn.is-active img {
+  position: relative;
+  filter: drop-shadow(0 0 6px rgba(255, 190, 100, 0.95));
+}
+@keyframes dock-glow {
+  0%, 100% { transform: scale(0.92); opacity: 0.8; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+/* ---------- Morral (botón central) ---------- */
+
+.dock__bag {
+  left: 50%;
+  bottom: calc(var(--B) + var(--app-w) * 0.018);
+  width: calc(var(--app-w) * 0.19);
+  aspect-ratio: 677 / 638;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+  transition: transform 500ms cubic-bezier(0.3, 1.45, 0.5, 1), opacity 300ms ease;
+}
+.dock__bag img {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  transition: opacity 180ms ease;
+  filter: drop-shadow(0 4px 6px rgba(80, 35, 12, 0.25));
+}
+.dock__bag-open { opacity: 0; }
+
+/* ---------- Estado abierto ---------- */
+
+.dock.is-open .dock__bar { transform: scaleY(1.3); }
+.dock.is-open .dock__bar,
+.dock.is-open .dock__btn,
+.dock.is-open .dock__bag { opacity: 0.8; }
+.dock.is-open .dock__bag {
+  transform: translateX(-50%) translateY(calc(var(--app-w) * -0.13)) scale(1.45);
+}
+.dock.is-open .dock__bag-closed { opacity: 0; }
+.dock.is-open .dock__bag-open { opacity: 1; }
+
+/* ---------- Esfera con la rueda de sub botones ---------- */
+
+.dock__sphere {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--app-w) * 754 / 1125 + var(--B));
+  transform-origin: 50% 100%;
+  transform: translateY(12%) scale(0.25);
+  opacity: 0;
+  pointer-events: none;
+  touch-action: none;
+  transition: transform 480ms cubic-bezier(0.3, 1.3, 0.5, 1), opacity 250ms ease;
+}
+.dock.is-open .dock__sphere {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+}
+.dock__sphere-bg {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+.dock__sphere::after {
+  content: "";
+  display: block;
+  height: var(--B);
+  margin-top: -1px;
+  background: rgba(255, 248, 242, 0.5);
+}
+
+.dock__label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--B) + var(--app-w) * 0.6);
+  transform: translateX(-50%);
+  font-size: calc(var(--app-w) * 0.046);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  color: #6e3a22;
+  pointer-events: none;
+}
+
+.wheel__item {
+  left: 50%;
+  bottom: calc(var(--B) + var(--app-w) * 0.142);
+  width: calc(var(--app-w) * var(--w));
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+.wheel__item img { filter: drop-shadow(0 4px 6px rgba(80, 35, 12, 0.25)); }

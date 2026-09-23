@@ -9,6 +9,7 @@
   const viewTitle = view.querySelector(".chest-view__title");
   const grid = view.querySelector(".chest-view__grid");
   const closeBtn = view.querySelector(".chest-view__close");
+  const deleteBtn = view.querySelector(".chest-view__delete");
   const flying = document.querySelector(".flying");
   const data = window.BonnyData;
   const audio = window.BonnyAudio;
@@ -132,12 +133,25 @@
     return { x: r.left + r.width / 2, y: r.top + r.height * 0.45, w: r.width };
   }
 
+  // Copia de una foto en la capa superior (encima de repisas y del cofre),
+  // así ningún contenedor la recorta mientras vuela
+  function cloneAt(card) {
+    const r = card.getBoundingClientRect();
+    const f = document.createElement("div");
+    f.className = "fly";
+    Object.assign(f.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
+    f.innerHTML = card.innerHTML;
+    flying.appendChild(f);
+    return { f, r };
+  }
+
   async function openChest(id) {
     if (busy || openId) return;
     busy = true;
     openId = id;
     data.activarBaul(id);
     markActive();
+    document.dispatchEvent(new CustomEvent("bonny:chest", { detail: { open: true } }));
 
     const baul = data.baules.find((b) => b.id === id);
     const el = chestEl(id);
@@ -153,6 +167,7 @@
       card.innerHTML = miniHTML(f, (Math.random() * 12 - 6).toFixed(1));
       grid.appendChild(card);
     });
+    resetDelete();
     view.classList.toggle("is-empty", fotos.length === 0);
     view.hidden = false;
     void view.offsetWidth;
@@ -160,47 +175,67 @@
 
     // las fotos salen del cofre hacia su lugar
     const mouth = chestMouth(el);
-    [...grid.children].forEach((card, i) => {
-      const r = card.getBoundingClientRect();
+    const gridBox = grid.getBoundingClientRect();
+    const cards = [...grid.children];
+    let longest = 0;
+    cards.forEach((card, i) => {
+      const cr = card.getBoundingClientRect();
+      if (cr.bottom < gridBox.top || cr.top > gridBox.bottom) return; // fuera de la vista: aparece sin volar
+      card.style.visibility = "hidden";
+      const { f, r } = cloneAt(card);
       const dx = mouth.x - (r.left + r.width / 2);
       const dy = mouth.y - (r.top + r.height / 2);
-      card.animate(
+      const delay = 200 + i * 80;
+      longest = Math.max(longest, delay + 750);
+      f.animate(
         [
           { transform: `translate(${dx}px, ${dy}px) scale(0.15)`, opacity: 0 },
           { opacity: 1, offset: 0.25 },
           { transform: `translate(${dx * 0.3}px, ${dy * 0.5 - 60}px) scale(0.7) rotate(${i % 2 ? 8 : -8}deg)`, offset: 0.55 },
           { transform: "none", opacity: 1 },
         ],
-        { duration: 750, delay: 200 + i * 80, easing: "cubic-bezier(0.25, 0.8, 0.3, 1.1)", fill: "backwards" }
+        { duration: 750, delay, easing: "cubic-bezier(0.25, 0.8, 0.3, 1.1)", fill: "both" }
+      );
+      setTimeout(() => { card.style.visibility = ""; f.remove(); }, delay + 750);
+    });
+    await wait(Math.max(400, longest));
+    busy = false;
+  }
+
+  // Devuelve las fotos visibles al cofre; true si hubo vuelo
+  async function photosBackToChest(el) {
+    const mouth = chestMouth(el);
+    const gridBox = grid.getBoundingClientRect();
+    const cards = [...grid.children].reverse().filter((card) => {
+      const cr = card.getBoundingClientRect();
+      return cr.bottom > gridBox.top && cr.top < gridBox.bottom;
+    });
+    cards.forEach((card, i) => {
+      const { f, r } = cloneAt(card);
+      card.style.visibility = "hidden";
+      const dx = mouth.x - (r.left + r.width / 2);
+      const dy = mouth.y - (r.top + r.height / 2);
+      f.animate(
+        [
+          { transform: "none", opacity: 1 },
+          { transform: `translate(${dx * 0.4}px, ${dy * 0.6 - 50}px) scale(0.6)`, opacity: 1, offset: 0.5 },
+          { transform: `translate(${dx}px, ${dy - 6}px) scale(0.18)`, opacity: 1, offset: 0.85 },
+          { transform: `translate(${dx}px, ${dy + 8}px) scale(0.1)`, opacity: 0 },
+        ],
+        { duration: 600, delay: i * 50, easing: "cubic-bezier(0.5, 0, 0.6, 1)", fill: "forwards" }
       );
     });
-    await wait(400);
-    busy = false;
+    grid.querySelectorAll(".cv-card").forEach((c) => (c.style.visibility = "hidden"));
+    view.classList.remove("is-visible");
+    await wait(600 + cards.length * 50);
+    flying.innerHTML = "";
   }
 
   async function closeChest() {
     if (busy || !openId) return;
     busy = true;
     const el = chestEl(openId);
-    const mouth = chestMouth(el);
-    const cards = [...grid.children].reverse();
-
-    // vuelven a entrar al cofre
-    cards.forEach((card, i) => {
-      const r = card.getBoundingClientRect();
-      const dx = mouth.x - (r.left + r.width / 2);
-      const dy = mouth.y - (r.top + r.height / 2);
-      card.animate(
-        [
-          { transform: "none", opacity: 1 },
-          { transform: `translate(${dx * 0.4}px, ${dy * 0.6 - 50}px) scale(0.6)`, opacity: 1, offset: 0.5 },
-          { transform: `translate(${dx}px, ${dy}px) scale(0.12)`, opacity: 0 },
-        ],
-        { duration: 550, delay: i * 50, easing: "cubic-bezier(0.5, 0, 0.6, 1)", fill: "forwards" }
-      );
-    });
-    view.classList.remove("is-visible");
-    await wait(550 + cards.length * 50);
+    await photosBackToChest(el);
 
     el.classList.remove("is-open");
     audio.playChestClose();
@@ -210,10 +245,96 @@
     grid.innerHTML = "";
     openId = null;
     busy = false;
+    document.dispatchEvent(new CustomEvent("bonny:chest", { detail: { open: false } }));
   }
 
   closeBtn.addEventListener("click", closeChest);
   view.querySelector(".chest-view__backdrop").addEventListener("click", closeChest);
+
+  /* ---------- Eliminar un baúl (con confirmación de dos toques) ---------- */
+
+  let confirmTimer = null;
+  function resetDelete() {
+    clearTimeout(confirmTimer);
+    deleteBtn.classList.remove("is-confirming");
+    deleteBtn.textContent = "eliminar baúl";
+  }
+
+  deleteBtn.addEventListener("click", async () => {
+    if (busy || !openId) return;
+    if (!deleteBtn.classList.contains("is-confirming")) {
+      deleteBtn.classList.add("is-confirming");
+      deleteBtn.textContent = "¿seguro? toca otra vez";
+      deleteBtn.animate(
+        [{ transform: "translateX(0)" }, { transform: "translateX(-6px)" }, { transform: "translateX(6px)" }, { transform: "translateX(0)" }],
+        { duration: 300 }
+      );
+      confirmTimer = setTimeout(resetDelete, 3000);
+      return;
+    }
+    clearTimeout(confirmTimer);
+    busy = true;
+    const id = openId;
+    const el = chestEl(id);
+
+    // las fotos se desvanecen, la tapa se cierra y el cofre desaparece en una nube
+    grid.querySelectorAll(".cv-card").forEach((c) =>
+      c.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(0.8)" }], { duration: 300, fill: "forwards" })
+    );
+    view.classList.remove("is-visible");
+    await wait(300);
+    view.hidden = true;
+    grid.innerHTML = "";
+    el.classList.remove("is-open");
+    audio.playChestClose();
+    await wait(200);
+
+    el.animate(
+      [
+        { transform: "none", opacity: 1, filter: "none" },
+        { transform: "rotate(-6deg)", offset: 0.15 },
+        { transform: "rotate(6deg)", offset: 0.3 },
+        { transform: "rotate(-4deg) scale(1.05)", offset: 0.45 },
+        { transform: "scale(0.2) translateY(20px)", opacity: 0, filter: "blur(4px)" },
+      ],
+      { duration: 700, easing: "ease-in", fill: "forwards" }
+    );
+    puff(el);
+    audio.playFlip(0.6);
+    await wait(700);
+
+    data.eliminarBaul(id);
+    openId = null;
+    render();
+    busy = false;
+    document.dispatchEvent(new CustomEvent("bonny:chest", { detail: { open: false } }));
+  });
+
+  // pequeña nube de polvo donde estaba el cofre
+  function puff(el) {
+    const r = el.querySelector(".chest__box").getBoundingClientRect();
+    for (let i = 0; i < 9; i++) {
+      const p = document.createElement("span");
+      p.className = "puff";
+      const size = 10 + Math.random() * 16;
+      Object.assign(p.style, {
+        left: r.left + r.width / 2 - size / 2 + "px",
+        top: r.top + r.height * 0.6 - size / 2 + "px",
+        width: size + "px",
+        height: size + "px",
+      });
+      flying.appendChild(p);
+      const a = (i / 9) * Math.PI * 2;
+      const d = 30 + Math.random() * 25;
+      p.animate(
+        [
+          { transform: "scale(0.3)", opacity: 0.9 },
+          { transform: `translate(${Math.cos(a) * d}px, ${Math.sin(a) * d * 0.6 - 10}px) scale(1.4)`, opacity: 0 },
+        ],
+        { duration: 700, delay: 250, easing: "ease-out", fill: "both" }
+      ).onfinish = () => p.remove();
+    }
+  }
 
   /* ---------- Llegada desde "primer baúl": las fotos vuelan al cofre ---------- */
 
@@ -292,6 +413,7 @@
     });
     await wait(400);
     busy = false;
+    document.dispatchEvent(new CustomEvent("bonny:shelves"));
   }
 
   document.addEventListener("baul:continue", enterFromBaul);
