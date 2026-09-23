@@ -107,18 +107,48 @@
       <!-- aquí se insertan las repisas extra (baules_bg_rep) -->
       <div class="sh-sec sh-bottom"></div>
     </div>
+  </section>
 
-    <!-- Cofre abierto: muestra las fotos que guarda -->
-    <section class="chest-view" hidden aria-label="Fotos del baúl">
-      <div class="chest-view__backdrop"></div>
-      <div class="chest-view__panel">
-        <h2 class="chest-view__title"></h2>
-        <div class="chest-view__grid"></div>
-        <p class="chest-view__empty">Este baúl aún no tiene fotos</p>
-        <button class="btn chest-view__close" type="button">cerrar</button>
-        <button class="chest-view__delete" type="button">eliminar baúl</button>
-      </div>
-    </section>
+  <!-- Baúl abierto: encima de todo -->
+  <section class="chest-view" hidden aria-label="Fotos del baúl">
+    <div class="cv-bg"></div>
+    <div class="cv-scroll">
+      <header class="cv-head">
+        <div class="chest cv-chest"></div>
+        <div class="cv-info">
+          <button class="cv-back" type="button">regresar</button>
+          <div class="cv-title-row">
+            <h2 class="cv-title"></h2>
+            <input class="cv-title-input" type="text" maxlength="28" enterkeyhint="done" autocomplete="off" hidden />
+            <button class="cv-edit" type="button" aria-label="Cambiar nombre">
+              <img src="assets/img/btn-edit.webp" alt="" draggable="false" />
+            </button>
+          </div>
+          <div class="cv-colors" role="radiogroup" aria-label="Color del baúl">
+            <button class="cv-color" type="button" role="radio" data-color="cafe" style="--c: #b45b2e" aria-label="Color cafe"></button>
+            <button class="cv-color" type="button" role="radio" data-color="crema" style="--c: #fbe6c8" aria-label="Color crema"></button>
+            <button class="cv-color" type="button" role="radio" data-color="verde" style="--c: #77753d" aria-label="Color verde"></button>
+            <button class="cv-color" type="button" role="radio" data-color="azul" style="--c: #578bb3" aria-label="Color azul"></button>
+            <button class="cv-color" type="button" role="radio" data-color="rojo" style="--c: #e0593b" aria-label="Color rojo"></button>
+          </div>
+        </div>
+      </header>
+
+      <div class="cv-grid"></div>
+      <p class="cv-empty">Este baúl aún no tiene fotos</p>
+
+      <footer class="cv-foot">
+        <button class="btn cv-activate" type="button">seleccionar activo</button>
+        <button class="cv-delete" type="button">eliminar</button>
+      </footer>
+    </div>
+  </section>
+
+  <!-- Foto ampliada (con zoom de dos dedos) -->
+  <section class="lightbox" hidden aria-label="Foto ampliada">
+    <div class="lightbox__bg"></div>
+    <div class="lightbox__stage"><img class="lightbox__img" alt="Integrante" draggable="false" /></div>
+    <button class="lightbox__close" type="button" aria-label="Cerrar foto">✕</button>
   </section>
 
   <!-- Botonera inferior fija -->
@@ -147,10 +177,10 @@
     <button class="dock__btn is-active" type="button" data-page="baules" style="--x: 14.6%; --w: 0.108" aria-label="Baúles" aria-current="page">
       <img src="assets/img/dock/nav-baules.webp" alt="" draggable="false" />
     </button>
-    <button class="dock__btn" type="button" data-page="tienda" style="--x: 30.5%; --w: 0.1" aria-label="Tienda">
+    <button class="dock__btn" type="button" data-page="tienda" data-near style="--x: 30.5%; --w: 0.1" aria-label="Tienda">
       <img src="assets/img/dock/nav-tienda.webp" alt="" draggable="false" />
     </button>
-    <button class="dock__btn" type="button" data-page="dibujo" style="--x: 69.3%; --w: 0.1" aria-label="Dibujar">
+    <button class="dock__btn" type="button" data-page="dibujo" data-near style="--x: 69.3%; --w: 0.1" aria-label="Dibujar">
       <img src="assets/img/dock/nav-dibujo.webp" alt="" draggable="false" />
     </button>
     <button class="dock__btn" type="button" data-page="perfil" style="--x: 85.6%; --w: 0.092" aria-label="Perfil">

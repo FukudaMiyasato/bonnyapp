@@ -19,7 +19,7 @@
 
   // proporción de la ventana del marco (863 x 759 px en la imagen)
   const WINDOW_ASPECT = 863 / 759;
-  const MINI_W = 360;
+  const MINI_W = 600; // suficiente para ampliar la foto con zoom
   const MINI_H = Math.round(MINI_W / WINDOW_ASPECT);
 
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));

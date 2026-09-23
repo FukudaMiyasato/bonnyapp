@@ -216,119 +216,328 @@
 .sh-add img { display: block; width: 100%; height: 100%; pointer-events: none; }
 .sh-add:active { transform: scale(0.9); }
 
-/* ---------- Cofre abierto ---------- */
+/* etiqueta "Activo" sobre el cofre activo */
+.chest__tag {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: 70%;
+  aspect-ratio: 313 / 123;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  background: url("assets/img/cofres/etiqueta.webp") center / 100% 100% no-repeat;
+  font-size: calc(var(--chest-w) * 0.13);
+  line-height: 1;
+  color: #5a2a12;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) scale(0.4);
+  transition: opacity 250ms ease, transform 400ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.chest.is-active .chest__tag {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* ---------- Baúl abierto (modal encima de todo) ---------- */
 
 .chest-view {
+  --cv-bg: #b8937a;
   position: fixed;
-  inset: 0;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: var(--app-w);
+  height: 100vh;
+  height: 100dvh;
+  z-index: 18;
 }
 .chest-view[hidden] { display: none; }
 
-.chest-view__backdrop {
+.cv-bg {
   position: absolute;
   inset: 0;
-  background: rgba(70, 35, 18, 0.45);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  background: var(--cv-bg);
   opacity: 0;
-  transition: opacity 350ms ease;
+  transition: opacity 400ms ease;
 }
-.chest-view.is-visible .chest-view__backdrop { opacity: 1; }
+.chest-view.is-visible .cv-bg { opacity: 1; }
 
-.chest-view__panel {
+/* sin scroll interno de fotos: todo el modal se desplaza y las fotos empujan los botones */
+.cv-scroll {
   position: relative;
-  width: 100%;
-  max-height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: calc(var(--safe-top) + 170px) 20px calc(var(--safe-bottom) + 24px);
-}
-
-.chest-view__title {
-  margin: 0 0 18px;
-  font-weight: 400;
-  font-size: 20px;
-  color: var(--cream);
-  text-shadow: 0 2px 6px rgba(60, 25, 10, 0.5);
-  opacity: 0;
-  transition: opacity 300ms ease 150ms;
-}
-.chest-view.is-visible .chest-view__title { opacity: 1; }
-
-.chest-view__grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px 6px;
-  max-height: 44dvh;
+  height: 100%;
   overflow-y: auto;
-  padding: 6px;
+  overscroll-behavior: contain;
   touch-action: pan-y;
   scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
 }
-.chest-view__grid::-webkit-scrollbar { display: none; }
+.cv-scroll::-webkit-scrollbar { display: none; }
 
-.cv-card {
-  position: relative;
-  width: calc(var(--app-w) * 0.27);
-  aspect-ratio: 1023 / 1206;
+/* la zona del baúl queda fija arriba al desplazarse */
+.cv-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: calc(var(--safe-top) + 18px) 90px 14px 5%;
+  background: transparent;
+  transition: background-color 300ms ease;
 }
+.chest-view.is-visible .cv-head { background: var(--cv-bg); }
+.chest-view.is-leaving .cv-head { background: transparent; }
 
-.chest-view__empty {
-  display: none;
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: var(--cream);
-  text-shadow: 0 1px 4px rgba(60, 25, 10, 0.5);
+.cv-chest {
+  flex: 0 0 auto;
+  width: calc(var(--app-w) * 0.19);
+  margin-top: 4px;
+  cursor: default;
 }
-.chest-view.is-empty .chest-view__empty { display: block; }
+.cv-chest.is-hidden { visibility: hidden; }
 
-.chest-view__close {
-  width: min(70%, 280px);
-  height: 54px;
-  margin-top: 22px;
-  font-size: 17px;
+.cv-info,
+.cv-grid,
+.cv-empty,
+.cv-foot {
+  transition: opacity 350ms ease, transform 400ms ease;
+}
+.chest-view:not(.is-visible) .cv-info,
+.chest-view:not(.is-visible) .cv-foot,
+.chest-view:not(.is-visible) .cv-empty {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(8px);
 }
-.chest-view.is-visible .chest-view__close {
-  opacity: 1;
-  transform: none;
-  transition-delay: 300ms;
+.chest-view.is-leaving .cv-info,
+.chest-view.is-leaving .cv-grid,
+.chest-view.is-leaving .cv-foot,
+.chest-view.is-leaving .cv-empty {
+  opacity: 0;
 }
 
-.chest-view__delete {
-  margin-top: 12px;
-  padding: 10px 22px;
-  border: 2px solid rgba(251, 244, 238, 0.7);
-  border-radius: 999px;
-  background: rgba(70, 35, 18, 0.25);
+.cv-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.cv-back {
+  padding: 5px 20px;
+  border: 0;
+  border-radius: 7px;
+  background: #cd7a60;
   font: inherit;
-  font-size: 13px;
-  letter-spacing: 0.04em;
+  font-size: 14px;
+  letter-spacing: 0.03em;
   color: var(--cream);
   cursor: pointer;
   touch-action: manipulation;
+}
+.cv-back:active { transform: scale(0.95); }
+
+.cv-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin-top: 6px;
+}
+.cv-title,
+.cv-title-input {
+  margin: 0;
+  min-width: 0;
+  font: inherit;
+  font-weight: 400;
+  font-size: max(16px, calc(var(--app-w) * 0.052));
+  line-height: 1.15;
+  color: var(--cream);
+}
+.cv-title { overflow-wrap: anywhere; }
+.cv-title-input {
+  width: 100%;
+  padding: 2px 6px;
+  border: 2px solid rgba(251, 244, 238, 0.8);
+  border-radius: 6px;
+  background: rgba(90, 45, 20, 0.25);
+  outline: none;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
+}
+.cv-edit {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.cv-edit img { display: block; width: 100%; height: 100%; }
+
+.cv-colors {
+  display: flex;
+  gap: 2px;
+  margin: 4px 0 0 -7px;
+}
+.cv-color {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: grid;
+  place-items: center;
+}
+.cv-color::before {
+  content: "";
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 2px transparent;
+  transition: box-shadow 200ms ease, transform 200ms ease;
+}
+.cv-color[aria-checked="true"]::before {
+  box-shadow: 0 0 0 2px #fff;
+  transform: scale(1.1);
+}
+
+.cv-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px 3.5%;
+  padding: 18px 5% 10px;
+}
+.cv-card {
+  position: relative;
+  width: 31%;
+  aspect-ratio: 1023 / 1206;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  touch-action: manipulation;
+}
+.cv-card .mini__card { filter: drop-shadow(0 5px 7px rgba(60, 25, 10, 0.35)); }
+
+.cv-empty {
+  display: none;
+  margin: 10px 5% 0;
+  font-size: 13px;
+  color: var(--cream);
+}
+.chest-view.is-empty .cv-empty { display: block; }
+
+.cv-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px calc(var(--safe-bottom) + 18px);
+}
+.cv-activate {
+  width: min(48%, 220px);
+  height: 50px;
+  border-radius: 10px;
+  font-size: 15px;
+  overflow: hidden;
+  transition: opacity 300ms ease, transform 300ms ease, height 350ms ease, margin 350ms ease;
+}
+.cv-activate.is-hidden {
   opacity: 0;
-  transition: opacity 300ms ease, background-color 250ms ease, border-color 250ms ease;
+  transform: scale(0.8);
+  height: 0;
+  pointer-events: none;
 }
-.chest-view.is-visible .chest-view__delete { opacity: 1; transition-delay: 380ms, 0ms, 0ms; }
-.chest-view__delete.is-confirming {
-  background: #b4533f;
-  border-color: #b4533f;
+.cv-delete {
+  margin-top: 8px;
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--cream);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 250ms ease;
 }
+.cv-delete.is-confirming { background: #b4533f; }
+
+/* ---------- Foto ampliada ---------- */
+
+.lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: var(--app-w);
+  height: 100vh;
+  height: 100dvh;
+  z-index: 31;
+  touch-action: none;
+}
+.lightbox[hidden] { display: none; }
+.lightbox__bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(40, 20, 10, 0.92);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.lightbox.is-visible .lightbox__bg { opacity: 1; }
+.lightbox__stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.lightbox__img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: none;
+  border-radius: 6px;
+  transform-origin: 0 0;
+  will-change: transform;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+.lightbox__close {
+  position: absolute;
+  top: calc(var(--safe-top) + 14px);
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(251, 244, 238, 0.92);
+  font: 700 18px/1 system-ui, sans-serif;
+  color: #5b3a26;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 250ms ease 150ms;
+}
+.lightbox.is-visible .lightbox__close { opacity: 1; }
 
 /* ---------- Fotos en vuelo ---------- */
 
 .flying {
   position: fixed;
   inset: 0;
-  z-index: 15;
+  z-index: 19; /* encima del baúl abierto */
   pointer-events: none;
 }
 .fly {

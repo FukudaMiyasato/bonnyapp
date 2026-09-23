@@ -52,18 +52,25 @@ window.BonnyData = (() => {
 
   /* ---------- Baúles ---------- */
 
-  /** @type {{ baules: { id: string, nombre: string, integrantes: string[], creado: string }[], activo: string | null }} */
+  /** Colores de cofre disponibles (clave → color del círculo). */
+  const COLORES = { cafe: "#b45b2e", crema: "#fbe6c8", verde: "#77753d", azul: "#578bb3", rojo: "#e0593b" };
+
+  /** @type {{ baules: { id: string, nombre: string, color: keyof COLORES, integrantes: string[], creado: string }[], activo: string | null }} */
   const estado = load(KEY_BAULES, { baules: [], activo: null });
   if (!Array.isArray(estado.baules)) estado.baules = [];
   const baules = estado.baules;
+  baules.forEach((b) => { if (!COLORES[b.color]) b.color = "cafe"; });
 
   const saveBaules = () => store(KEY_BAULES, estado);
 
-  /** Crea un baúl, lo deja como activo y lo devuelve. */
+  /** Crea un baúl, lo deja como activo y lo devuelve. El primero es café; los demás, de color al azar. */
   function crearBaul(nombre) {
+    const claves = Object.keys(COLORES);
+    const primero = baules.length === 0;
     const baul = {
       id: uid(),
-      nombre: nombre || (baules.length === 0 ? "Mi primer baúl" : `Baúl ${baules.length + 1}`),
+      nombre: nombre || (primero ? "Mi primer baúl" : `Baúl ${baules.length + 1}`),
+      color: primero ? "cafe" : claves[Math.floor(Math.random() * claves.length)],
       integrantes: [],
       creado: new Date().toISOString(),
     };
@@ -89,6 +96,20 @@ window.BonnyData = (() => {
     saveBaules();
   }
 
+  function renombrarBaul(id, nombre) {
+    const baul = baules.find((b) => b.id === id);
+    if (!baul || !nombre.trim()) return;
+    baul.nombre = nombre.trim();
+    saveBaules();
+  }
+
+  function colorBaul(id, color) {
+    const baul = baules.find((b) => b.id === id);
+    if (!baul || !COLORES[color]) return;
+    baul.color = color;
+    saveBaules();
+  }
+
   function activarBaul(id) {
     estado.activo = id;
     saveBaules();
@@ -104,7 +125,10 @@ window.BonnyData = (() => {
     crearBaul,
     guardarEnBaul,
     eliminarBaul,
+    renombrarBaul,
+    colorBaul,
     activarBaul,
+    COLORES,
     nuevoId: uid,
   };
 })();

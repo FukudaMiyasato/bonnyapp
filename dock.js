@@ -71,13 +71,21 @@
   let drag = null;
   sphere.addEventListener("pointerdown", (e) => {
     cancelAnimationFrame(tween);
-    drag = { x0: e.clientX, rot0: rot, lastX: e.clientX, lastT: e.timeStamp, v: 0, moved: false, item: e.target.closest(".wheel__item") };
+    drag = { x0: e.clientX, y0: e.clientY, rot0: rot, lastX: e.clientX, lastT: e.timeStamp, v: 0, moved: false, item: e.target.closest(".wheel__item") };
     try { sphere.setPointerCapture(e.pointerId); } catch (_) {}
   });
   sphere.addEventListener("pointermove", (e) => {
     if (!drag) return;
     const dx = e.clientX - drag.x0;
-    if (Math.abs(dx) > 6) drag.moved = true;
+    const dy = e.clientY - drag.y0;
+    // deslizar hacia abajo cierra el morral
+    if (!drag.moved && dy > 40 && dy > Math.abs(dx) * 1.2) {
+      drag = null;
+      rotateTo(clamp(Math.round(rot), 0, n - 1));
+      setOpen(false);
+      return;
+    }
+    if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) drag.moved = true;
     if (!drag.moved) return;
     const dt = Math.max(1, e.timeStamp - drag.lastT);
     drag.v = (e.clientX - drag.lastX) / dt;
@@ -143,7 +151,22 @@
     }
   }
 
-  bag.addEventListener("click", () => setOpen(!open));
+  // tocar el morral lo abre/cierra; deslizarlo hacia abajo lo cierra
+  let bagSwipe = null;
+  let swallowClick = false;
+  bag.addEventListener("pointerdown", (e) => { bagSwipe = e.clientY; });
+  bag.addEventListener("pointerup", (e) => {
+    if (bagSwipe !== null && open && e.clientY - bagSwipe > 30) {
+      setOpen(false);
+      swallowClick = true;
+      setTimeout(() => (swallowClick = false), 400);
+    }
+    bagSwipe = null;
+  });
+  bag.addEventListener("click", () => {
+    if (swallowClick) return;
+    setOpen(!open);
+  });
   catcher.addEventListener("pointerdown", (e) => {
     e.preventDefault();
     setOpen(false);

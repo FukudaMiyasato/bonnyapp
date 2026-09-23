@@ -17,8 +17,9 @@
 .dock[hidden] { display: none; }
 /* se esconde mientras hay un cofre abierto */
 .dock.is-away {
-  transform: translateY(35%);
+  transform: translateY(45%);
   opacity: 0;
+  transition: transform 1100ms cubic-bezier(0.4, 0, 0.3, 1), opacity 900ms ease 150ms;
 }
 .dock.is-away * { pointer-events: none !important; }
 
@@ -101,6 +102,20 @@
   position: relative;
   filter: drop-shadow(0 0 6px rgba(255, 190, 100, 0.95));
 }
+/* punto naranja bajo la sección activa */
+.dock__btn.is-active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #ee7a2e;
+  box-shadow: 0 0 6px rgba(238, 122, 46, 0.8);
+}
+
 @keyframes dock-glow {
   0%, 100% { transform: scale(0.92); opacity: 0.8; }
   50% { transform: scale(1.08); opacity: 1; }
@@ -132,6 +147,13 @@
 .dock.is-open .dock__bar,
 .dock.is-open .dock__btn,
 .dock.is-open .dock__bag { opacity: 0.8; }
+
+/* los botones más cercanos al morral suben un poco */
+.dock.is-open .dock__btn[data-near] {
+  transform: translateX(-50%) translateY(calc(var(--app-w) * -0.035));
+  transition: opacity 300ms ease, transform 450ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
 .dock.is-open .dock__bag {
   transform: translateX(-50%) translateY(calc(var(--app-w) * -0.13)) scale(1.45);
 }
