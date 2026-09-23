@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fbf4ee" />
+  <title>Bonny</title>
+  <link rel="preload" href="assets/fonts/Bungee-Regular.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="onboarding" data-step="0">
+    <section class="stage" aria-hidden="true">
+      <div class="page" data-index="0">
+        <video src="assets/videos/01loop.mp4" autoplay muted loop playsinline preload="auto"></video>
+        <span class="page__shade"></span>
+      </div>
+      <div class="page" data-index="1">
+        <video src="assets/videos/02loop.mp4" autoplay muted loop playsinline preload="auto"></video>
+        <span class="page__shade"></span>
+      </div>
+    </section>
+
+    <section class="sheet">
+      <svg class="sheet__wave" viewBox="0 0 798 234" aria-hidden="true">
+        <path d="M0 62 Q32 60 55 82 Q400 -82 743 82 Q766 60 798 62 V234 H0 Z" />
+      </svg>
+
+      <div class="dots" role="tablist" aria-label="Pasos">
+        <button class="dot" role="tab" aria-label="Paso 1" data-go="0"></button>
+        <button class="dot" role="tab" aria-label="Paso 2" data-go="1"></button>
+      </div>
+
+      <div class="copy">
+        <article class="copy__item" data-index="0">
+          <h1>Crea recuerdos</h1>
+          <p>Toma fotos, graba audios y videos. Guarda <mark>cualquier</mark> momento importante.</p>
+        </article>
+        <article class="copy__item" data-index="1">
+          <h1>Revive cada momento</h1>
+          <p>No importa lo que guardaste, acá podrás revivirlo.</p>
+        </article>
+      </div>
+
+      <div class="actions">
+        <button class="btn-start" type="button" tabindex="-1">Empezar</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
