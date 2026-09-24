@@ -128,11 +128,13 @@
       { duration: 380, easing: "ease-out" }
     );
     audio.playPop();
-    // por ahora solo la cámara tiene pantalla; las demás solo rebotan
-    if (el.dataset.name === "cámara") {
+    // cámara, videocámara y grabadora abren la misma pantalla en su modo
+    const modes = { "cámara": "foto", "videocámara": "video", "grabadora": "audio" };
+    const mode = modes[el.dataset.name];
+    if (mode) {
       setTimeout(() => {
         setOpen(false);
-        document.dispatchEvent(new CustomEvent("bonny:camera"));
+        document.dispatchEvent(new CustomEvent("bonny:camera", { detail: { mode } }));
       }, 220);
     }
   }
@@ -193,12 +195,29 @@
 
   /* ---------- Secciones ---------- */
 
+  // secciones: baúles y perfil son páginas; el dibujo es una pantalla aparte
+  function goTo(page) {
+    navBtns.forEach((b) => {
+      const on = b.dataset.page === page;
+      b.classList.toggle("is-active", on);
+      if (on) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
+    document.dispatchEvent(new CustomEvent("bonny:nav", { detail: { page } }));
+  }
+
   navBtns.forEach((btn) =>
     btn.addEventListener("click", () => {
       if (btn.classList.contains("is-active")) return;
       if (btn.dataset.page === "dibujo") {
         setOpen(false);
         document.dispatchEvent(new CustomEvent("bonny:dibujo"));
+        return;
+      }
+      if (btn.dataset.page === "baules" || btn.dataset.page === "perfil") {
+        setOpen(false);
+        audio.playTick();
+        goTo(btn.dataset.page);
         return;
       }
       // las demás secciones aún no existen
@@ -225,6 +244,9 @@
     if (e.detail.open) setOpen(false);
     dock.classList.toggle("is-away", e.detail.open);
   });
+
+  // tras borrar la cuenta o al entrar, se vuelve a los baúles
+  document.addEventListener("bonny:go", (e) => goTo(e.detail.page));
 
   window.addEventListener("resize", layout);
   layout();

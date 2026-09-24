@@ -538,12 +538,52 @@
       return tf(x, y, rot, k);
     }
 
+    let media = null; // <video> o <audio> del recuerdo abierto
+    let tapTimer = null;
+
+    function stopMedia() {
+      clearTimeout(tapTimer);
+      if (media) { media.pause(); media.removeAttribute("src"); media.load?.(); }
+      media = null;
+    }
+
+    function toggleMedia() {
+      if (!media) return;
+      const badge = card.querySelector(".mini__badge");
+      if (media.paused) media.play().catch(() => {});
+      else media.pause();
+      if (badge) badge.textContent = media.paused ? "▶" : "❚❚";
+    }
+
+    // videos y grabaciones se reproducen al abrirse; un toque pausa o sigue
+    async function loadMedia(item) {
+      const url = await data.fotoURL(item.id);
+      if (!url || !source) return;
+      if (item.medio === "video") {
+        const v = document.createElement("video");
+        v.className = "mini__photo";
+        v.src = url;
+        v.loop = true;
+        v.playsInline = true;
+        card.querySelector(".mini__photo")?.replaceWith(v);
+        card.querySelector(".mini__badge")?.remove();
+        media = v;
+      } else {
+        media = new Audio(url);
+        media.onended = () => { const b = card.querySelector(".mini__badge"); if (b) b.textContent = "▶"; };
+        const b = card.querySelector(".mini__badge");
+        if (b) b.textContent = "❚❚";
+      }
+      media.play().catch(() => { const b = card.querySelector(".mini__badge"); if (b) b.textContent = "▶"; });
+    }
+
     function open(c) {
       source = c;
       const integrante = data.item(c.dataset.id);
       if (!integrante) return;
       card.innerHTML = window.BonnyPolaroid.html(integrante, 0);
       window.BonnyPolaroid.hydrate(card);
+      if (integrante.medio === "video" || integrante.medio === "audio") loadMedia(integrante);
       box.hidden = false;
       fit();
       s = 1; r = 0; tx = 0; ty = 0;
@@ -558,6 +598,7 @@
 
     async function close() {
       if (box.hidden) return;
+      stopMedia();
       box.classList.remove("is-visible");
       card.animate([{ transform: card.style.transform }, { transform: fromSource() }], {
         duration: 340, easing: "cubic-bezier(0.4, 0, 0.3, 1)", fill: "forwards",
@@ -606,9 +647,11 @@
       };
     }
 
+    let downAt = null; // para distinguir un toque de un arrastre
     stage.addEventListener("pointerdown", (e) => {
       try { stage.setPointerCapture(e.pointerId); } catch (_) {}
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      downAt = pointers.size === 1 ? { x: e.clientX, y: e.clientY, moved: false } : null;
       card.getAnimations().forEach((a) => a.cancel());
       if (pointers.size === 2) startPinch();
     });
@@ -618,6 +661,7 @@
       if (!prev) return;
       const cur = { x: e.clientX, y: e.clientY };
       pointers.set(e.pointerId, cur);
+      if (downAt && Math.hypot(cur.x - downAt.x, cur.y - downAt.y) > 8) downAt.moved = true;
       if (pointers.size >= 2 && pinch) {
         const [a, b] = [...pointers.values()];
         const [ax, ay] = stagePoint(a), [bx, by] = stagePoint(b);
@@ -652,7 +696,14 @@
       if (pointers.size < 2) pinch = null;
       if (pointers.size === 0) {
         // doble toque: acerca / vuelve a la normalidad
+        const tapped = e.type === "pointerup" && downAt && !downAt.moved;
+        if (tapped && media) {
+          // toque simple: pausa / sigue (si no llega un segundo toque)
+          clearTimeout(tapTimer);
+          if (e.timeStamp - lastTap >= 280) tapTimer = setTimeout(toggleMedia, 290);
+        }
         if (e.type === "pointerup" && e.timeStamp - lastTap < 280) {
+          clearTimeout(tapTimer);
           const [px, py] = stagePoint({ x: e.clientX, y: e.clientY });
           if (s > 1.05 || r !== 0) { s = 1; r = 0; tx = 0; ty = 0; }
           else { const q = localAt(px, py); s = 2.5; placeAt(px, py, q); }
@@ -669,8 +720,9 @@
     closeBtn.addEventListener("click", close);
     window.addEventListener("resize", () => { if (!box.hidden) { fit(); s = 1; r = 0; tx = 0; ty = 0; apply(); } });
 
-    return { open };
+    return { open, close };
   })();
+  window.BonnyLightbox = Lightbox;
 
   /* ---------- Llegada desde "primer baúl": las fotos vuelan al cofre ---------- */
 
@@ -802,4 +854,22 @@
   }
 
   window.BonnyShelves = { receive, render };
+
+  /* ---------- Si ya hay miembros de la familia, la app abre directo aquí ---------- */
+
+  function enterDirect() {
+    document.dispatchEvent(new CustomEvent("bonny:skip-onboarding"));
+    render();
+    scene.hidden = false;
+    void scene.offsetWidth;
+    scene.classList.add("is-in");
+    window.BonnySplitChars?.(title, { t: 150 }, 30);
+    title.classList.add("is-active");
+    const active = data.baulActivo && chestEl(data.baulActivo.id);
+    active?.scrollIntoView({ block: "center" });
+    // espera a que la botonera esté lista para mostrarla
+    setTimeout(() => document.dispatchEvent(new CustomEvent("bonny:shelves")), 400);
+  }
+
+  if (data.integrantes.length) enterDirect();
 })();

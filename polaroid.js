@@ -20,10 +20,16 @@ window.BonnyPolaroid = (() => {
       </div>`;
     }
     const lugar = item.ubicacion ? `<span class="mini__place">${esc(item.ubicacion)}</span>` : "";
-    const src = item.foto ? `src="${item.foto}"` : `data-rid="${item.id}"`;
+    // videos y audios muestran su miniatura (poster) con un distintivo
+    const av = item.medio === "video" || item.medio === "audio";
+    const src = item.foto ? `src="${item.foto}"` : `data-rid="${item.id}${av ? ":poster" : ""}"`;
+    const badge = av
+      ? `<span class="mini__badge mini__badge--${item.medio}" aria-hidden="true">${item.medio === "video" ? "▶" : "♪"}</span>`
+      : "";
+    const alt = item.medio === "video" ? "Video" : item.medio === "audio" ? "Grabación" : item.tipo === "recuerdo" ? "Recuerdo" : "Integrante";
     return `
-      <div class="mini__card" style="--r:${rot}deg">
-        <img class="mini__photo" ${src} alt="${item.tipo === "recuerdo" ? "Recuerdo" : "Integrante"}" draggable="false" />
+      <div class="mini__card" style="--r:${rot}deg" data-medio="${item.medio || "foto"}">
+        <img class="mini__photo" ${src} alt="${alt}" draggable="false" />${badge}
         <img class="mini__frame" src="assets/img/photo-mini.webp" alt="" draggable="false" />
         <div class="mini__caption">${lugar}<span class="mini__date">${esc(fecha(item.creado))}</span></div>
       </div>`;

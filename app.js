@@ -358,6 +358,13 @@
     if (e.key === "ArrowLeft") goTo(step - 1);
   });
 
+  // si ya hay miembros de la familia, la app entra directo a los baúles
+  document.addEventListener("bonny:skip-onboarding", () => {
+    stopped = true;
+    videos.forEach((v) => v.pause());
+    root.style.display = "none";
+  });
+
   startBtn.addEventListener("click", () => {
     if (stopped) return;
     stopped = true;

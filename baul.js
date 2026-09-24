@@ -333,8 +333,7 @@
 
   /* ---------- Otros botones ---------- */
 
-  continueBtn.addEventListener("click", () => {
-    if (busy || continueBtn.disabled) return;
+  function goToShelves() {
     continueBtn.disabled = true;
     busy = true;
     stopCamera();
@@ -342,8 +341,18 @@
       bubbles: true,
       detail: { integrantes: data.integrantes, photos },
     }));
+  }
+
+  continueBtn.addEventListener("click", () => {
+    if (busy || continueBtn.disabled) return;
+    goToShelves();
   });
-  // "saltar" no hace nada por ahora
+
+  // "saltar" lleva directo a los baúles (con las fotos que se hayan tomado, si hay)
+  scene.querySelector(".link-skip").addEventListener("click", () => {
+    if (busy) return;
+    goToShelves();
+  });
 
   /* ---------- Entrada a la escena ---------- */
 

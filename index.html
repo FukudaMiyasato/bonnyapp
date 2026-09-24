@@ -23,6 +23,8 @@
   <link rel="stylesheet" href="dock.css" />
   <link rel="stylesheet" href="camara.css" />
   <link rel="stylesheet" href="dibujo.css" />
+  <link rel="stylesheet" href="perfil.css" />
+  <link rel="stylesheet" href="album.css" />
 </head>
 <body>
   <main class="onboarding" data-step="0">
@@ -108,9 +110,35 @@
     <div class="shelves__wall">
       <div class="sh-sec sh-top">
         <h1 class="shelves__title">Mis baúles<br />de recuerdos</h1>
+        <div class="sh-switch" role="tablist" aria-label="Vista">
+          <span class="sh-switch__thumb" aria-hidden="true"></span>
+          <button class="sh-switch__opt" type="button" role="tab" data-view="baules" aria-selected="true">baúles</button>
+          <button class="sh-switch__opt" type="button" role="tab" data-view="album" aria-selected="false">álbum</button>
+          <button class="sh-switch__opt" type="button" role="tab" data-view="mapa" aria-selected="false">mapa</button>
+        </div>
       </div>
       <!-- aquí se insertan las repisas extra (baules_bg_rep) -->
       <div class="sh-sec sh-bottom"></div>
+    </div>
+
+    <!-- Álbum: las fotos de los baúles en páginas que se pasan -->
+    <section class="album" hidden aria-label="Álbum">
+      <div class="album__book"></div>
+      <p class="album__count" aria-live="polite"></p>
+    </section>
+  </section>
+
+  <!-- Perfil (tuerca de la botonera): miembros de la familia y eliminar cuenta -->
+  <section class="perfil" hidden aria-label="Mi familia">
+    <div class="perfil__scroll">
+      <h1 class="perfil__title">Mi familia</h1>
+      <p class="perfil__sub">miembros de la familia</p>
+      <div class="perfil__grid"></div>
+      <p class="perfil__empty">aún no hay miembros de la familia</p>
+      <div class="perfil__danger">
+        <button class="perfil__delete" type="button">eliminar cuenta</button>
+        <p class="perfil__note">borra todas las fotos, videos, grabaciones, dibujos y baúles de este teléfono</p>
+      </div>
     </div>
   </section>
 
@@ -170,11 +198,17 @@
       <img class="camara__corner camara__corner--bl" src="assets/img/camara/esquina.webp" alt="" />
       <img class="camara__corner camara__corner--br" src="assets/img/camara/esquina.webp" alt="" />
     </div>
-    <button class="camara__back" type="button" aria-label="Volver">
-      <img src="assets/img/camara/btn-back.webp" alt="" draggable="false" />
-    </button>
+    <!-- modo grabadora: casete y ondas del micrófono -->
+    <div class="camara__audio" aria-hidden="true">
+      <img class="camara__audio-icon" src="assets/img/dock/sub-grabadora.webp" alt="" draggable="false" />
+      <canvas class="camara__wave" width="600" height="160"></canvas>
+    </div>
+    <span class="camara__timer" aria-live="polite">00:00</span>
     <div class="camara__panel">
       <img class="camara__panel-bg" src="assets/img/camara/bg-panel.webp" alt="" draggable="false" />
+      <button class="camara__exit" type="button" aria-label="Salir">
+        <img src="assets/img/camara/btn-salir.webp" alt="" draggable="false" />
+      </button>
       <button class="camara__shutter" type="button" aria-label="Tomar foto">
         <img src="assets/img/btn-shutter.png" alt="" draggable="false" />
       </button>
@@ -193,6 +227,7 @@
         <div class="preview__card"></div>
         <div class="preview__dev" aria-hidden="true"><span class="preview__scan"></span></div>
         <p class="preview__status" aria-live="polite"></p>
+        <button class="preview__play" type="button" aria-label="Reproducir">▶</button>
       </div>
       <div class="preview__family">
         <p class="preview__hint">A la familia no se abandona, agrégalos :</p>
@@ -317,5 +352,7 @@
   <script src="dock.js"></script>
   <script src="camara.js"></script>
   <script src="dibujo.js"></script>
+  <script src="perfil.js"></script>
+  <script src="album.js"></script>
 </body>
 </html>

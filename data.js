@@ -6,6 +6,7 @@ window.BonnyData = (() => {
   const KEY = "bonny:integrantes";
   const KEY_BAULES = "bonny:baules";
   const KEY_RECUERDOS = "bonny:recuerdos";
+  const KEY_ALBUM = "bonny:album";
 
   const load = (key, fallback) => {
     try {
@@ -95,17 +96,24 @@ window.BonnyData = (() => {
 
   /* ---------- Recuerdos (fotos de la cámara) ---------- */
 
-  /** @type {{ id: string, tipo: "recuerdo", ubicacion: string | null, compuesta: boolean, dibujo?: boolean, creado: string }[]} */
+  /** @type {{ id: string, tipo: "recuerdo", medio: "foto" | "video" | "audio" | "dibujo", ubicacion: string | null, compuesta: boolean, dibujo?: boolean, duracion?: number, creado: string }[]} */
   const recuerdos = [];
   const savedRecuerdos = load(KEY_RECUERDOS, []);
   if (Array.isArray(savedRecuerdos)) recuerdos.push(...savedRecuerdos);
+  recuerdos.forEach((r) => { if (!r.medio) r.medio = r.dibujo ? "dibujo" : "foto"; });
 
-  /** Guarda la foto (Blob) y devuelve el recuerdo.
-      `compuesta`: si se le agregó un integrante con IA; `dibujo`: si es un dibujo con crayones. */
-  async function agregarRecuerdo({ blob, ubicacion = null, compuesta = false, dibujo = false }) {
-    const r = { id: uid(), tipo: "recuerdo", ubicacion, compuesta, dibujo, creado: new Date().toISOString() };
+  /** Guarda el recuerdo (Blob) y lo devuelve.
+      `medio`: foto, video, audio o dibujo; `poster`: miniatura (Blob) para videos y audios;
+      `compuesta`: si se le agregó un integrante con IA. */
+  async function agregarRecuerdo({ blob, poster = null, medio = "foto", ubicacion = null, compuesta = false, dibujo = false, duracion = null }) {
+    if (dibujo) medio = "dibujo";
+    const r = { id: uid(), tipo: "recuerdo", medio, ubicacion, compuesta, dibujo: medio === "dibujo", duracion, creado: new Date().toISOString() };
     await putBlob(r.id, blob);
     urls.set(r.id, Promise.resolve(URL.createObjectURL(blob)));
+    if (poster) {
+      await putBlob(r.id + ":poster", poster);
+      urls.set(r.id + ":poster", Promise.resolve(URL.createObjectURL(poster)));
+    }
     recuerdos.push(r);
     store(KEY_RECUERDOS, recuerdos);
     return r;
@@ -114,6 +122,25 @@ window.BonnyData = (() => {
   const recuerdo = (id) => recuerdos.find((r) => r.id === id) || null;
   /** Integrante o recuerdo por id. */
   const item = (id) => integrante(id) || recuerdo(id);
+
+  /* ---------- Álbum: posición de cada foto en sus páginas ---------- */
+
+  /** @type {Record<string, { x: number, y: number, s: number, r: number, z: number }>} */
+  const album = load(KEY_ALBUM, {});
+  const guardarAlbum = () => store(KEY_ALBUM, album);
+
+  /* ---------- Borrar cuenta: elimina todos los datos del dispositivo ---------- */
+
+  async function borrarTodo() {
+    Object.keys(localStorage).filter((k) => k.startsWith("bonny:")).forEach((k) => localStorage.removeItem(k));
+    try {
+      (await dbPromise)?.close();
+    } catch (_) {}
+    await new Promise((resolve) => {
+      const req = indexedDB.deleteDatabase("bonny");
+      req.onsuccess = req.onerror = req.onblocked = () => resolve();
+    });
+  }
 
   /* ---------- Ubicación (ciudad, país) para escribirla en las fotos ---------- */
 
@@ -228,6 +255,9 @@ window.BonnyData = (() => {
     item,
     fotoURL,
     ubicacion,
+    album,
+    guardarAlbum,
+    borrarTodo,
     baules,
     get baulActivo() { return baules.find((b) => b.id === estado.activo) || null; },
     crearBaul,
