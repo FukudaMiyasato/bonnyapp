@@ -96,12 +96,13 @@
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(var(--app-w) * 0.2 + var(--safe-bottom));
+  /* alto suficiente para ver los crayones completos (y el elegido levantado) */
+  height: calc(var(--app-w) * 0.37 + var(--safe-bottom));
   display: flex;
   justify-content: safe center;
   align-items: flex-start;
-  gap: calc(var(--app-w) * 0.018);
-  padding: calc(var(--app-w) * 0.04) calc(var(--app-w) * 0.05) 0;
+  gap: calc(var(--app-w) * 0.022);
+  padding: calc(var(--app-w) * 0.05) calc(var(--app-w) * 0.05) var(--safe-bottom);
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -113,7 +114,7 @@
 .dib-crayons::-webkit-scrollbar { display: none; }
 .dib-crayon {
   flex: 0 0 auto;
-  width: calc(var(--app-w) * 0.09);
+  width: calc(var(--app-w) * 0.08);
   padding: 0;
   border: 0;
   background: none;
@@ -122,7 +123,7 @@
   transform: translateY(120%);
   transition: transform 450ms cubic-bezier(0.3, 1.45, 0.5, 1);
 }
-.dib-crayon--eraser { width: calc(var(--app-w) * 0.105); margin-left: calc(var(--app-w) * 0.02); }
+.dib-crayon--eraser { width: calc(var(--app-w) * 0.1); margin-left: calc(var(--app-w) * 0.02); }
 .dib-crayon img {
   display: block;
   width: 100%;
@@ -130,8 +131,8 @@
   pointer-events: none;
   filter: drop-shadow(0 -2px 5px rgba(60, 20, 0, 0.3));
 }
-.dibujo.is-in .dib-crayon { transform: translateY(18%); }
-.dibujo.is-in .dib-crayon[aria-pressed="true"] { transform: translateY(-14%) scale(1.14); }
+.dibujo.is-in .dib-crayon { transform: translateY(6%); }
+.dibujo.is-in .dib-crayon[aria-pressed="true"] { transform: translateY(-9%) scale(1.08); }
 
 /* tacho: pide un segundo toque para confirmar */
 .dib-trash.is-confirming img { animation: trash-shake 300ms ease; filter: drop-shadow(0 0 6px rgba(224, 89, 59, 0.9)); }

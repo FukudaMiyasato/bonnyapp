@@ -42,7 +42,8 @@
   function fit() {
     const W = stage.clientWidth, H = stage.clientHeight;
     const top = topBar.getBoundingClientRect().bottom - stage.getBoundingClientRect().top + 16;
-    const bottom = W * 0.2 + parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--safe-bottom") || 0) + 18;
+    // la hoja termina justo encima de la fila de crayones
+    const bottom = stage.getBoundingClientRect().bottom - page.querySelector(".dib-crayons").getBoundingClientRect().top + 6;
     const availH = Math.max(200, H - top - bottom);
     let h = availH, w = h * SHEET_ASPECT;
     if (w > W * 0.9) { w = W * 0.9; h = w / SHEET_ASPECT; }
