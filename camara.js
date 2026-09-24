@@ -396,6 +396,7 @@
     photo = canvas;
     if (mode === "foto") media = null;
     compuesta = false;
+    usados.clear();
     placeText = null;
     shotDate = creado();
     pv.dataset.mode = mode;
@@ -503,6 +504,9 @@
     return [...new Set(ids)].map(data.integrante).filter(Boolean);
   }
 
+  // miembros que ya se fusionaron en esta foto: no se pueden volver a agregar
+  const usados = new Set();
+
   function renderMembers() {
     membersRow.innerHTML = "";
     const list = familyMembers();
@@ -514,6 +518,7 @@
       el.className = "pm";
       el.style.setProperty("--pm-w", w + "px");
       el.innerHTML = window.BonnyPolaroid.html(m, ((i % 2 ? 1 : -1) * (3 + Math.random() * 5)).toFixed(1));
+      if (usados.has(m.id)) markUsed(el);
       el.addEventListener("pointerdown", (e) => startDrag(e, el, m));
       membersRow.appendChild(el);
     });
@@ -533,8 +538,14 @@
     return x > r.left - pad && x < r.right + pad && y > r.top - pad && y < r.bottom + pad;
   }
 
+  function markUsed(el) {
+    el.classList.add("is-used");
+    el.setAttribute("aria-disabled", "true");
+    el.title = "ya está en la foto";
+  }
+
   function startDrag(e, el, member) {
-    if (busy || drag) return;
+    if (busy || drag || usados.has(member.id)) return;
     e.preventDefault();
     try { el.setPointerCapture(e.pointerId); } catch (_) {}
     const r = el.getBoundingClientRect();
@@ -687,6 +698,7 @@
       await img.decode();
       photo = toCanvas(img, img.naturalWidth, img.naturalHeight);
       compuesta = true;
+      usados.add(d.member.id); // ya está en la foto
       stopStatus();
       pv.classList.remove("is-loading");
       renderCard();
@@ -701,7 +713,8 @@
       stopStatus("no pudimos agregarlo, intenta otra vez");
     }
 
-    // el integrante vuelve a su lugar en la fila
+    // el integrante vuelve a su lugar en la fila (en gris si ya quedó en la foto)
+    if (usados.has(d.member.id)) markUsed(d.el);
     d.el.style.visibility = "";
     d.el.classList.remove("is-back");
     void d.el.offsetWidth;

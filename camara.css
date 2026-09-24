@@ -362,6 +362,14 @@
 }
 .pm:first-child { margin-left: 0; }
 .pm .mini__card { filter: drop-shadow(0 3px 5px rgba(50, 20, 5, 0.4)); }
+/* ya fusionado en la foto: en gris y sin poder tocarse */
+.pm.is-used {
+  cursor: default;
+  pointer-events: none;
+  filter: grayscale(1) brightness(0.9);
+  opacity: 0.55;
+  transition: filter 500ms ease, opacity 500ms ease;
+}
 .pm.is-back { animation: pm-back 450ms cubic-bezier(0.3, 1.5, 0.5, 1); }
 @keyframes pm-back { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
 
