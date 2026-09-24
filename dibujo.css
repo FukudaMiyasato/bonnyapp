@@ -1,0 +1,140 @@
+/* ============ Dibujo con crayones ============ */
+
+.dibujo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: var(--app-w);
+  height: 100vh;
+  height: 100lvh;
+  z-index: 16;
+  overflow: hidden;
+  touch-action: none;
+}
+.dibujo[hidden] { display: none; }
+
+.dib-bg {
+  position: absolute;
+  inset: 0;
+  background: #d7702a url("assets/img/dibujo/bg-mesa.webp") center / cover no-repeat;
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+.dibujo.is-in .dib-bg { opacity: 1; }
+
+/* zona de gestos: dibujar con un dedo, acercar / girar la hoja con dos */
+.dib-stage {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+
+.dib-paper {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  filter: drop-shadow(0 14px 24px rgba(60, 20, 0, 0.35));
+  opacity: 0;
+}
+.dibujo.is-in .dib-paper { opacity: 1; }
+.dib-paper__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* área de papel dentro de la imagen (sin los bordes transparentes) */
+.dib-canvas {
+  position: absolute;
+  left: 3.97%;
+  top: 1.75%;
+  width: 92.8%;
+  height: 96.3%;
+  pointer-events: none;
+}
+.dib-paper__snap {
+  position: absolute;
+  left: 3.97%;
+  top: 1.75%;
+  width: 92.8%;
+  height: 96.3%;
+}
+
+.dib-top {
+  position: absolute;
+  top: calc(var(--safe-top) + 14px);
+  left: 50%;
+  display: flex;
+  gap: 14px;
+  transform: translate(-50%, -20px);
+  opacity: 0;
+  transition: opacity 350ms ease 250ms, transform 450ms cubic-bezier(0.3, 1.4, 0.5, 1) 250ms;
+}
+.dibujo.is-in .dib-top { opacity: 1; transform: translate(-50%, 0); }
+.dib-btn {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 150ms ease;
+}
+.dib-btn img { display: block; width: 100%; height: 100%; pointer-events: none; }
+.dib-btn:active { transform: scale(0.9); }
+.dib-btn:disabled { opacity: 0.5; }
+
+/* crayones abajo: solo asoman; el elegido sube */
+.dib-crayons {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--app-w) * 0.2 + var(--safe-bottom));
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1.8%;
+  pointer-events: none;
+}
+.dib-crayon {
+  width: 9%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  pointer-events: auto;
+  transform: translateY(120%);
+  transition: transform 450ms cubic-bezier(0.3, 1.45, 0.5, 1);
+}
+.dib-crayon img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 -2px 5px rgba(60, 20, 0, 0.3));
+}
+.dibujo.is-in .dib-crayon { transform: translateY(18%); }
+.dibujo.is-in .dib-crayon[aria-pressed="true"] { transform: translateY(-14%) scale(1.14); }
+
+.dibujo.is-saving .dib-bg,
+.dibujo.is-saving .dib-top,
+.dibujo.is-saving .dib-crayons { opacity: 0; transition: opacity 400ms ease; }
+
+/* dibujo guardado dentro de un baúl: hoja de papel en vez de polaroid */
+.mini__card.is-dibujo .mini__photo {
+  left: 9%;
+  top: 2%;
+  width: 82%;
+  height: 96%;
+  object-fit: contain;
+  border-radius: 2px;
+  background: transparent;
+}

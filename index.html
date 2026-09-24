@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="baules.css" />
   <link rel="stylesheet" href="dock.css" />
   <link rel="stylesheet" href="camara.css" />
+  <link rel="stylesheet" href="dibujo.css" />
 </head>
 <body>
   <main class="onboarding" data-step="0">
@@ -204,6 +205,48 @@
     </div>
   </section>
 
+  <!-- Dibujo (crayón de la botonera) -->
+  <section class="dibujo" hidden aria-label="Dibujar">
+    <div class="dib-bg"></div>
+    <div class="dib-stage">
+      <div class="dib-paper">
+        <img class="dib-paper__img" src="assets/img/dibujo/hoja.webp" alt="" draggable="false" />
+        <canvas class="dib-canvas"></canvas>
+      </div>
+    </div>
+    <div class="dib-top">
+      <button class="dib-btn dib-back" type="button" aria-label="Salir">
+        <img src="assets/img/dibujo/btn-atras.webp" alt="" draggable="false" />
+      </button>
+      <button class="dib-btn dib-save" type="button" aria-label="Guardar dibujo">
+        <img src="assets/img/dibujo/btn-guardar.webp" alt="" draggable="false" />
+      </button>
+    </div>
+    <div class="dib-crayons" role="radiogroup" aria-label="Crayones">
+      <button class="dib-crayon" type="button" data-color="#fdc40c" aria-label="Crayón amarillo" aria-pressed="false">
+        <img src="assets/img/dibujo/crayon-amarillo.webp" alt="" draggable="false" />
+      </button>
+      <button class="dib-crayon" type="button" data-color="#fd6896" aria-label="Crayón rosado" aria-pressed="false">
+        <img src="assets/img/dibujo/crayon-rosado.webp" alt="" draggable="false" />
+      </button>
+      <button class="dib-crayon" type="button" data-color="#f63432" aria-label="Crayón rojo" aria-pressed="false">
+        <img src="assets/img/dibujo/crayon-rojo.webp" alt="" draggable="false" />
+      </button>
+      <button class="dib-crayon" type="button" data-color="#fe7a17" aria-label="Crayón naranja" aria-pressed="true">
+        <img src="assets/img/dibujo/crayon-naranja.webp" alt="" draggable="false" />
+      </button>
+      <button class="dib-crayon" type="button" data-color="#914be7" aria-label="Crayón morado" aria-pressed="false">
+        <img src="assets/img/dibujo/crayon-morado.webp" alt="" draggable="false" />
+      </button>
+      <button class="dib-crayon" type="button" data-color="#52a441" aria-label="Crayón verde" aria-pressed="false">
+        <img src="assets/img/dibujo/crayon-verde.webp" alt="" draggable="false" />
+      </button>
+      <button class="dib-crayon" type="button" data-color="#0f7efc" aria-label="Crayón azul" aria-pressed="false">
+        <img src="assets/img/dibujo/crayon-azul.webp" alt="" draggable="false" />
+      </button>
+    </div>
+  </section>
+
   <!-- Botonera inferior fija -->
   <div class="dock-catcher" aria-hidden="true"></div>
   <nav class="dock" hidden aria-label="Menú principal">
@@ -273,5 +316,6 @@
   <script src="baules.js"></script>
   <script src="dock.js"></script>
   <script src="camara.js"></script>
+  <script src="dibujo.js"></script>
 </body>
 </html>

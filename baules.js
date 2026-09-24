@@ -769,7 +769,7 @@
     const fly = document.createElement("div");
     fly.className = "fly";
     Object.assign(fly.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
-    fly.innerHTML = el.querySelector(".mini__card")?.outerHTML || "";
+    fly.innerHTML = el.querySelector(".mini__card")?.outerHTML || el.innerHTML; // polaroid u hoja de dibujo
     flying.appendChild(fly);
     el.style.visibility = "hidden";
 

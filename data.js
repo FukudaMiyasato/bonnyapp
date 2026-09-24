@@ -95,14 +95,15 @@ window.BonnyData = (() => {
 
   /* ---------- Recuerdos (fotos de la cámara) ---------- */
 
-  /** @type {{ id: string, tipo: "recuerdo", ubicacion: string | null, compuesta: boolean, creado: string }[]} */
+  /** @type {{ id: string, tipo: "recuerdo", ubicacion: string | null, compuesta: boolean, dibujo?: boolean, creado: string }[]} */
   const recuerdos = [];
   const savedRecuerdos = load(KEY_RECUERDOS, []);
   if (Array.isArray(savedRecuerdos)) recuerdos.push(...savedRecuerdos);
 
-  /** Guarda la foto (Blob) y devuelve el recuerdo. `compuesta`: si se le agregó un integrante con IA. */
-  async function agregarRecuerdo({ blob, ubicacion = null, compuesta = false }) {
-    const r = { id: uid(), tipo: "recuerdo", ubicacion, compuesta, creado: new Date().toISOString() };
+  /** Guarda la foto (Blob) y devuelve el recuerdo.
+      `compuesta`: si se le agregó un integrante con IA; `dibujo`: si es un dibujo con crayones. */
+  async function agregarRecuerdo({ blob, ubicacion = null, compuesta = false, dibujo = false }) {
+    const r = { id: uid(), tipo: "recuerdo", ubicacion, compuesta, dibujo, creado: new Date().toISOString() };
     await putBlob(r.id, blob);
     urls.set(r.id, Promise.resolve(URL.createObjectURL(blob)));
     recuerdos.push(r);

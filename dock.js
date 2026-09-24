@@ -196,6 +196,11 @@
   navBtns.forEach((btn) =>
     btn.addEventListener("click", () => {
       if (btn.classList.contains("is-active")) return;
+      if (btn.dataset.page === "dibujo") {
+        setOpen(false);
+        document.dispatchEvent(new CustomEvent("bonny:dibujo"));
+        return;
+      }
       // las demás secciones aún no existen
       btn.querySelector("img").animate(
         [{ transform: "rotate(0)" }, { transform: "rotate(-10deg)" }, { transform: "rotate(8deg)" }, { transform: "rotate(0)" }],

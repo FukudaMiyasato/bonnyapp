@@ -11,6 +11,14 @@ window.BonnyPolaroid = (() => {
   /** HTML de la tarjeta (va dentro de un contenedor con la proporción del marco).
       Sirve para integrantes (foto en línea) y recuerdos (foto en IndexedDB: usar `hydrate`). */
   function html(item, rot = 0) {
+    // los dibujos se muestran como una hoja de papel, sin marco de polaroid
+    if (item.dibujo) {
+      const src = item.foto ? `src="${item.foto}"` : `data-rid="${item.id}"`;
+      return `
+      <div class="mini__card is-dibujo" style="--r:${rot}deg">
+        <img class="mini__photo" ${src} alt="Dibujo" draggable="false" />
+      </div>`;
+    }
     const lugar = item.ubicacion ? `<span class="mini__place">${esc(item.ubicacion)}</span>` : "";
     const src = item.foto ? `src="${item.foto}"` : `data-rid="${item.id}"`;
     return `
