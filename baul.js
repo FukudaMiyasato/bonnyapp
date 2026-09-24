@@ -120,31 +120,7 @@
     return c;
   }
 
-  /* ---------- Ubicación (ciudad, país) para escribirla en la foto ---------- */
-
-  let placePromise = null;
-  function loadPlace() {
-    if (placePromise) return placePromise;
-    placePromise = new Promise((resolve) => {
-      if (!navigator.geolocation) return resolve(null);
-      navigator.geolocation.getCurrentPosition(
-        async ({ coords }) => {
-          try {
-            // geocodificación inversa gratuita, sin clave
-            const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${coords.latitude}&longitude=${coords.longitude}&localityLanguage=es`;
-            const r = await (await fetch(url)).json();
-            const city = r.city || r.locality || r.principalSubdivision;
-            resolve([city, r.countryName].filter(Boolean).join(", ") || null);
-          } catch (_) {
-            resolve(null);
-          }
-        },
-        () => resolve(null),
-        { enableHighAccuracy: false, timeout: 8000, maximumAge: 10 * 60 * 1000 }
-      );
-    });
-    return placePromise;
-  }
+  const loadPlace = () => window.BonnyData.ubicacion();
 
   /* ---------- Cámara ---------- */
 

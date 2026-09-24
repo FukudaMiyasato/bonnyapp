@@ -191,7 +191,9 @@
     resetDelete();
 
     grid.innerHTML = "";
-    const fotos = baul.integrantes.map(data.integrante).filter(Boolean);
+    // recuerdos (fotos de la cámara), del más nuevo al más antiguo, y luego los integrantes
+    const recuerdos = (baul.recuerdos || []).map(data.recuerdo).filter(Boolean).reverse();
+    const fotos = [...recuerdos, ...baul.integrantes.map(data.integrante).filter(Boolean)];
     fotos.forEach((f) => {
       const card = document.createElement("button");
       card.type = "button";
@@ -213,6 +215,7 @@
     const shelfEl = chestEl(id);
 
     fillView(baul);
+    const hydrated = window.BonnyPolaroid.hydrate(grid); // imágenes guardadas en IndexedDB, en paralelo
     const cards = [...grid.children];
     cards.forEach((c) => (c.style.visibility = "hidden"));
     cvChest.classList.add("is-hidden");
@@ -235,7 +238,7 @@
     // se abre y las fotos salen hacia su lugar
     cvChest.classList.add("is-open");
     audio.playChestOpen();
-    await wait(250);
+    await Promise.all([wait(250), hydrated]);
     const mouth = mouthOf(cvChest);
     let longest = 0;
     cards.forEach((card, i) => {
@@ -537,9 +540,10 @@
 
     function open(c) {
       source = c;
-      const integrante = data.integrante(c.dataset.id);
+      const integrante = data.item(c.dataset.id);
       if (!integrante) return;
       card.innerHTML = window.BonnyPolaroid.html(integrante, 0);
+      window.BonnyPolaroid.hydrate(card);
       box.hidden = false;
       fit();
       s = 1; r = 0; tx = 0; ty = 0;
@@ -750,4 +754,52 @@
   }
 
   document.addEventListener("baul:continue", enterFromBaul);
+
+  /* ---------- Recibir una foto desde otra pantalla (p. ej. la cámara) ---------- */
+
+  // `el` es la polaroid en pantalla; vuela hasta el baúl y entra en él
+  async function receive(el, baulId) {
+    busy = true;
+    render();
+    const chest = chestEl(baulId);
+    chest.scrollIntoView({ block: "center" });
+    await wait(50);
+
+    const r = el.getBoundingClientRect();
+    const fly = document.createElement("div");
+    fly.className = "fly";
+    Object.assign(fly.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
+    fly.innerHTML = el.querySelector(".mini__card")?.outerHTML || "";
+    flying.appendChild(fly);
+    el.style.visibility = "hidden";
+
+    chest.classList.add("is-open");
+    audio.playChestOpen();
+    await wait(250);
+
+    const mouth = mouthOf(chest);
+    const dx = mouth.x - (r.left + r.width / 2);
+    const dy = mouth.y - (r.top + r.height / 2);
+    const s = (mouth.w * 0.55) / r.width;
+    audio.playFlip(0.45);
+    fly.animate(
+      [
+        { transform: "rotate(-2deg)", opacity: 1 },
+        { transform: `translate(${dx * 0.4}px, ${dy * 0.5 - 70}px) scale(0.6) rotate(10deg)`, offset: 0.45 },
+        { transform: `translate(${dx}px, ${dy - 26}px) scale(${s}) rotate(-4deg)`, opacity: 1, offset: 0.82 },
+        { transform: `translate(${dx}px, ${dy + mouth.w * 0.12}px) scale(${s * 0.6})`, opacity: 0 },
+      ],
+      { duration: 1150, easing: "cubic-bezier(0.45, 0.05, 0.4, 1)", fill: "forwards" }
+    );
+    await wait(1150);
+    fly.remove();
+
+    chest.classList.remove("is-open");
+    audio.playChestClose();
+    bounce(chest);
+    await wait(350);
+    busy = false;
+  }
+
+  window.BonnyShelves = { receive, render };
 })();

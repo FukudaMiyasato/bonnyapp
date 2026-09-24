@@ -107,7 +107,7 @@
       if (!d.item) return;
       const i = items.indexOf(d.item);
       if (i !== Math.round(rot)) rotateTo(i);
-      else press(d.item); // el del centro: por ahora solo responde con un rebote
+      else press(d.item);
       return;
     }
     // un gesto rápido avanza una posición más
@@ -123,6 +123,13 @@
       { duration: 380, easing: "ease-out" }
     );
     audio.playPop();
+    // por ahora solo la cámara tiene pantalla; las demás solo rebotan
+    if (el.dataset.name === "cámara") {
+      setTimeout(() => {
+        setOpen(false);
+        document.dispatchEvent(new CustomEvent("bonny:camera"));
+      }, 220);
+    }
   }
 
   /* ---------- Abrir / cerrar el morral ---------- */

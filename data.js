@@ -1,9 +1,11 @@
-/* Datos de Bonny, guardados en localStorage para usarlos en las siguientes escenas:
-   - integrantes: fotos de cada integrante detectado en las fotos familiares
-   - baules: los cofres de recuerdos; cada uno guarda ids de integrantes */
+/* Datos de Bonny, guardados en el dispositivo para usarlos en las siguientes escenas:
+   - integrantes: fotos de cada integrante detectado en las fotos familiares (localStorage)
+   - recuerdos: fotos tomadas con la cámara (imagen en IndexedDB, datos en localStorage)
+   - baules: los cofres de recuerdos; cada uno guarda ids de integrantes y de recuerdos */
 window.BonnyData = (() => {
   const KEY = "bonny:integrantes";
   const KEY_BAULES = "bonny:baules";
+  const KEY_RECUERDOS = "bonny:recuerdos";
 
   const load = (key, fallback) => {
     try {
@@ -50,6 +52,94 @@ window.BonnyData = (() => {
 
   const integrante = (id) => integrantes.find((i) => i.id === id) || null;
 
+  /* ---------- Imágenes grandes en IndexedDB ---------- */
+
+  let dbPromise = null;
+  function db() {
+    if (!dbPromise) {
+      dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open("bonny", 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("fotos");
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    return dbPromise;
+  }
+  async function putBlob(id, blob) {
+    const d = await db();
+    await new Promise((resolve, reject) => {
+      const tx = d.transaction("fotos", "readwrite");
+      tx.objectStore("fotos").put(blob, id);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  async function getBlob(id) {
+    const d = await db();
+    return new Promise((resolve, reject) => {
+      const req = d.transaction("fotos").objectStore("fotos").get(id);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  const urls = new Map();
+  /** URL para mostrar la imagen de un recuerdo (se carga una sola vez). */
+  async function fotoURL(id) {
+    if (!urls.has(id)) {
+      urls.set(id, getBlob(id).then((b) => (b ? URL.createObjectURL(b) : "")).catch(() => ""));
+    }
+    return urls.get(id);
+  }
+
+  /* ---------- Recuerdos (fotos de la cámara) ---------- */
+
+  /** @type {{ id: string, tipo: "recuerdo", ubicacion: string | null, compuesta: boolean, creado: string }[]} */
+  const recuerdos = [];
+  const savedRecuerdos = load(KEY_RECUERDOS, []);
+  if (Array.isArray(savedRecuerdos)) recuerdos.push(...savedRecuerdos);
+
+  /** Guarda la foto (Blob) y devuelve el recuerdo. `compuesta`: si se le agregó un integrante con IA. */
+  async function agregarRecuerdo({ blob, ubicacion = null, compuesta = false }) {
+    const r = { id: uid(), tipo: "recuerdo", ubicacion, compuesta, creado: new Date().toISOString() };
+    await putBlob(r.id, blob);
+    urls.set(r.id, Promise.resolve(URL.createObjectURL(blob)));
+    recuerdos.push(r);
+    store(KEY_RECUERDOS, recuerdos);
+    return r;
+  }
+
+  const recuerdo = (id) => recuerdos.find((r) => r.id === id) || null;
+  /** Integrante o recuerdo por id. */
+  const item = (id) => integrante(id) || recuerdo(id);
+
+  /* ---------- Ubicación (ciudad, país) para escribirla en las fotos ---------- */
+
+  let placePromise = null;
+  function ubicacion() {
+    if (placePromise) return placePromise;
+    placePromise = new Promise((resolve) => {
+      if (!navigator.geolocation) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        async ({ coords }) => {
+          try {
+            // geocodificación inversa gratuita, sin clave
+            const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${coords.latitude}&longitude=${coords.longitude}&localityLanguage=es`;
+            const r = await (await fetch(url)).json();
+            const city = r.city || r.locality || r.principalSubdivision;
+            resolve([city, r.countryName].filter(Boolean).join(", ") || null);
+          } catch (_) {
+            resolve(null);
+          }
+        },
+        () => resolve(null),
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 10 * 60 * 1000 }
+      );
+    });
+    return placePromise;
+  }
+
   /* ---------- Baúles ---------- */
 
   /** Colores de cofre disponibles (clave → color del círculo). */
@@ -59,7 +149,10 @@ window.BonnyData = (() => {
   const estado = load(KEY_BAULES, { baules: [], activo: null });
   if (!Array.isArray(estado.baules)) estado.baules = [];
   const baules = estado.baules;
-  baules.forEach((b) => { if (!COLORES[b.color]) b.color = "cafe"; });
+  baules.forEach((b) => {
+    if (!COLORES[b.color]) b.color = "cafe";
+    if (!Array.isArray(b.recuerdos)) b.recuerdos = [];
+  });
 
   const saveBaules = () => store(KEY_BAULES, estado);
 
@@ -72,6 +165,7 @@ window.BonnyData = (() => {
       nombre: nombre || (primero ? "Mi primer baúl" : `Baúl ${baules.length + 1}`),
       color: primero ? "cafe" : claves[Math.floor(Math.random() * claves.length)],
       integrantes: [],
+      recuerdos: [],
       creado: new Date().toISOString(),
     };
     baules.push(baul);
@@ -93,6 +187,13 @@ window.BonnyData = (() => {
     if (i < 0) return;
     baules.splice(i, 1);
     if (estado.activo === id) estado.activo = baules.length ? baules[baules.length - 1].id : null;
+    saveBaules();
+  }
+
+  function guardarRecuerdoEnBaul(baulId, recuerdoId) {
+    const baul = baules.find((b) => b.id === baulId);
+    if (!baul || baul.recuerdos.includes(recuerdoId)) return;
+    baul.recuerdos.push(recuerdoId);
     saveBaules();
   }
 
@@ -120,10 +221,17 @@ window.BonnyData = (() => {
     agregarIntegrante,
     borrarIntegrantes,
     integrante,
+    recuerdos,
+    agregarRecuerdo,
+    recuerdo,
+    item,
+    fotoURL,
+    ubicacion,
     baules,
     get baulActivo() { return baules.find((b) => b.id === estado.activo) || null; },
     crearBaul,
     guardarEnBaul,
+    guardarRecuerdoEnBaul,
     eliminarBaul,
     renombrarBaul,
     colorBaul,

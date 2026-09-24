@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="baul.css" />
   <link rel="stylesheet" href="baules.css" />
   <link rel="stylesheet" href="dock.css" />
+  <link rel="stylesheet" href="camara.css" />
 </head>
 <body>
   <main class="onboarding" data-step="0">
@@ -158,6 +159,51 @@
     <button class="lightbox__close" type="button" aria-label="Cerrar foto">✕</button>
   </section>
 
+  <!-- Cámara (desde el morral → cámara) -->
+  <section class="camara" hidden aria-label="Cámara">
+    <video class="camara__video" autoplay muted playsinline></video>
+    <p class="camara__msg">toca el botón para elegir una foto</p>
+    <div class="camara__corners" aria-hidden="true">
+      <img class="camara__corner camara__corner--tl" src="assets/img/camara/esquina.webp" alt="" />
+      <img class="camara__corner camara__corner--tr" src="assets/img/camara/esquina.webp" alt="" />
+      <img class="camara__corner camara__corner--bl" src="assets/img/camara/esquina.webp" alt="" />
+      <img class="camara__corner camara__corner--br" src="assets/img/camara/esquina.webp" alt="" />
+    </div>
+    <button class="camara__back" type="button" aria-label="Volver">
+      <img src="assets/img/camara/btn-back.webp" alt="" draggable="false" />
+    </button>
+    <div class="camara__panel">
+      <img class="camara__panel-bg" src="assets/img/camara/bg-panel.webp" alt="" draggable="false" />
+      <button class="camara__shutter" type="button" aria-label="Tomar foto">
+        <img src="assets/img/btn-shutter.png" alt="" draggable="false" />
+      </button>
+      <button class="camara__switch" type="button" aria-label="Cambiar cámara">
+        <img src="assets/img/btn-switch.png" alt="" draggable="false" />
+      </button>
+    </div>
+    <input class="camara__file" type="file" accept="image/*" hidden />
+  </section>
+
+  <!-- Vista previa de la foto recién tomada -->
+  <section class="preview" hidden aria-label="Vista previa">
+    <div class="preview__bg"></div>
+    <div class="preview__ui">
+      <div class="preview__photo">
+        <div class="preview__card"></div>
+        <div class="preview__dev" aria-hidden="true"><span class="preview__scan"></span></div>
+        <p class="preview__status" aria-live="polite"></p>
+      </div>
+      <div class="preview__family">
+        <p class="preview__hint">A la familia no se abandona, agrégalos :</p>
+        <div class="preview__members"></div>
+      </div>
+      <div class="preview__actions">
+        <button class="btn preview__save" type="button">guárdalo</button>
+        <button class="preview__discard" type="button">descartar</button>
+      </div>
+    </div>
+  </section>
+
   <!-- Botonera inferior fija -->
   <div class="dock-catcher" aria-hidden="true"></div>
   <nav class="dock" hidden aria-label="Menú principal">
@@ -226,5 +272,6 @@
   <script src="baul.js"></script>
   <script src="baules.js"></script>
   <script src="dock.js"></script>
+  <script src="camara.js"></script>
 </body>
 </html>

@@ -123,6 +123,7 @@
 
 .chest__box {
   position: relative;
+  container-type: inline-size;
   width: 100%;
   aspect-ratio: 493 / 350;
   perspective: 240px;
@@ -227,7 +228,7 @@
   display: grid;
   place-items: center;
   background: url("assets/img/cofres/etiqueta.webp") center / 100% 100% no-repeat;
-  font-size: calc(var(--chest-w) * 0.13);
+  font-size: 13cqw; /* relativo al ancho del cofre, esté donde esté */
   line-height: 1;
   color: #5a2a12;
   pointer-events: none;
