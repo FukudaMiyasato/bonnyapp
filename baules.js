@@ -235,14 +235,20 @@
     clone.remove();
     typeTitle(baul.nombre);
 
-    // se abre y las fotos salen hacia su lugar
+    // se abre y las fotos salen hacia su lugar (si no hay fotos, queda cerrado)
+    const leaving = cards.filter(inViewport);
+    cards.filter((c) => !inViewport(c)).forEach((c) => (c.style.visibility = ""));
+    if (!leaving.length) {
+      await hydrated;
+      busy = false;
+      return;
+    }
     cvChest.classList.add("is-open");
     audio.playChestOpen();
     await Promise.all([wait(250), hydrated]);
     const mouth = mouthOf(cvChest);
     let longest = 0;
-    cards.forEach((card, i) => {
-      if (!inViewport(card)) { card.style.visibility = ""; return; }
+    leaving.forEach((card, i) => {
       const { f, r } = cloneAt(card);
       const dx = mouth.x - (r.left + r.width / 2);
       const dy = mouth.y - (r.top + r.height / 2);
@@ -277,12 +283,14 @@
     const baul = openBaul();
     cvTitle.textContent = baul.nombre;
 
-    // el cofre se abre y las fotos vuelven a entrar
-    cvChest.classList.add("is-open");
-    audio.playChestOpen();
-    await wait(250);
-    const mouth = mouthOf(cvChest);
+    // el cofre se abre y las fotos vuelven a entrar (si no hay fotos, queda cerrado)
     const cards = [...grid.children].filter(inViewport).reverse();
+    if (cards.length) {
+      cvChest.classList.add("is-open");
+      audio.playChestOpen();
+      await wait(250);
+    }
+    const mouth = mouthOf(cvChest);
     cards.forEach((card, i) => {
       const { f, r } = cloneAt(card);
       const dx = mouth.x - (r.left + r.width / 2);
@@ -301,13 +309,15 @@
     // todo lo demás se vuelve transparente
     view.classList.add("is-leaving");
     view.classList.remove("is-visible");
-    await wait(600 + cards.length * 60);
+    await wait(cards.length ? 600 + cards.length * 60 : 400);
     flying.innerHTML = "";
 
-    cvChest.classList.remove("is-open");
-    audio.playChestClose();
-    bounce(cvChest);
-    await wait(320);
+    if (cards.length) {
+      cvChest.classList.remove("is-open");
+      audio.playChestClose();
+      bounce(cvChest);
+      await wait(320);
+    }
 
     // regresa a su lugar en la repisa (con su nuevo color / nombre)
     render();
@@ -767,6 +777,12 @@
 
     await wait(750);
     baulScene.hidden = true;
+    if (!flies.length) {
+      add.style.opacity = "";
+      busy = false;
+      document.dispatchEvent(new CustomEvent("bonny:shelves"));
+      return;
+    }
     el.classList.add("is-open");
     audio.playChestOpen();
     await wait(300);
@@ -812,6 +828,11 @@
   // `el` es la polaroid en pantalla; vuela hasta el baúl y entra en él
   async function receive(el, baulId) {
     busy = true;
+    // siempre se guarda en la página de baúles, en la vista de baúles (no álbum ni mapa)
+    const fromOther = !document.querySelector(".perfil").hidden || scene.classList.contains("is-album");
+    document.dispatchEvent(new CustomEvent("bonny:go", { detail: { page: "baules" } }));
+    document.dispatchEvent(new CustomEvent("bonny:set-view", { detail: { view: "baules" } }));
+    if (fromOther) await wait(420); // espera a que la vista cambie
     render();
     const chest = chestEl(baulId);
     chest.scrollIntoView({ block: "center" });

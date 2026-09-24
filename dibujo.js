@@ -299,7 +299,9 @@
     g.drawImage(sheet, PAPER_SRC.x, PAPER_SRC.y, PAPER_SRC.w, PAPER_SRC.h, 0, 0, CW, CH);
     g.drawImage(canvas, 0, 0);
     const blob = await new Promise((res) => out.toBlob(res, "image/jpeg", 0.9));
-    const recuerdo = await data.agregarRecuerdo({ blob, dibujo: true });
+    // además, el trazo solo en PNG transparente (así se ve en el álbum)
+    const png = await new Promise((res) => canvas.toBlob(res, "image/png"));
+    const recuerdo = await data.agregarRecuerdo({ blob, poster: png, dibujo: true });
     const baul = data.baulActivo || data.baules[data.baules.length - 1] || data.crearBaul();
     data.activarBaul(baul.id);
     data.guardarRecuerdoEnBaul(baul.id, recuerdo.id);

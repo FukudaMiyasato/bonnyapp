@@ -164,3 +164,57 @@
   letter-spacing: 0.06em;
   color: #a85b3b;
 }
+
+/* dibujos en el álbum: solo el trazo transparente, sin papel ni marco */
+.album__photo.is-dibujo { aspect-ratio: 772 / 1208; }
+.album__photo.is-dibujo .mini__card { filter: drop-shadow(0 2px 2px rgba(60, 25, 10, 0.18)); }
+.album__drawing {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* bordes: al sostener una foto aquí, se pasa de hoja */
+.album__edge {
+  position: absolute;
+  top: -2%;
+  bottom: -2%;
+  width: 16%;
+  z-index: 60;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.album__edge--left {
+  left: -6%;
+  border-radius: 0 40% 40% 0 / 0 50% 50% 0;
+  background: radial-gradient(ellipse at 0% 50%, rgba(255, 196, 110, 0.95), rgba(255, 170, 80, 0.35) 45%, transparent 72%);
+}
+.album__edge--right {
+  right: -6%;
+  border-radius: 40% 0 0 40% / 50% 0 0 50%;
+  background: radial-gradient(ellipse at 100% 50%, rgba(255, 196, 110, 0.95), rgba(255, 170, 80, 0.35) 45%, transparent 72%);
+}
+.album__edge.is-hot { opacity: 0.45; }
+.album__edge.is-arming { animation: edge-arm 900ms ease-in forwards, edge-pulse 450ms ease-in-out infinite alternate; }
+@keyframes edge-arm {
+  from { opacity: 0.45; filter: brightness(1); }
+  to { opacity: 1; filter: brightness(1.35); }
+}
+@keyframes edge-pulse {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(1.25); }
+}
+
+/* capa donde viaja la foto mientras se da vuelta la hoja */
+.album__carry {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  pointer-events: none;
+}
+.album__carry .album__photo { pointer-events: none; }
