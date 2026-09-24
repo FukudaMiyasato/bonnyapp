@@ -12,6 +12,7 @@
   const STEP = 52;        // grados entre sub botones
   const RADIUS = 0.366;   // radio de la rueda, en proporción al ancho
   const n = items.length;
+  const TAP_SLOP = 14;    // px que el dedo puede moverse y seguir contando como toque
 
   let rot = 1;            // índice (con decimales) del sub botón que está arriba
   let shown = 1;
@@ -85,7 +86,7 @@
       setOpen(false);
       return;
     }
-    if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) drag.moved = true;
+    if (Math.abs(dx) > TAP_SLOP && Math.abs(dx) > Math.abs(dy)) drag.moved = true;
     if (!drag.moved) return;
     const dt = Math.max(1, e.timeStamp - drag.lastT);
     drag.v = (e.clientX - drag.lastX) / dt;
@@ -99,12 +100,16 @@
     rot = next;
     layout();
   });
-  function endDrag() {
+  function endDrag(e) {
     if (!drag) return;
     const d = drag;
     drag = null;
     if (!d.moved) {
-      if (!d.item) return;
+      // si el sistema canceló el toque, solo acomoda la rueda
+      if (e.type === "pointercancel" || !d.item) {
+        rotateTo(clamp(Math.round(rot), 0, n - 1));
+        return;
+      }
       const i = items.indexOf(d.item);
       if (i !== Math.round(rot)) rotateTo(i);
       else press(d.item);
