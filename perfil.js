@@ -24,8 +24,13 @@
     page.classList.toggle("is-empty", data.integrantes.length === 0);
   }
 
+  // herramientas: el interruptor de música quita o devuelve el iPod
+  const musicSwitch = page.querySelector('.tool-switch[data-tool="musica"]');
+  musicSwitch.addEventListener("change", () => window.BonnyMusic?.setIpod(musicSwitch.checked));
+
   async function show() {
     render();
+    musicSwitch.checked = window.BonnyMusic ? window.BonnyMusic.ipodOn : true;
     resetDelete();
     scroller.scrollTop = 0;
     page.hidden = false;

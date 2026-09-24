@@ -31,8 +31,15 @@
   /* ---------- Música de fondo + notas flotantes ---------- */
 
   const MUSIC_KEY = "bonny:music";
+  const IPOD_KEY = "bonny:ipod"; // interruptor de "música" en la página de la tuerca
   let musicOn = true;
-  try { musicOn = localStorage.getItem(MUSIC_KEY) !== "0"; } catch (_) {}
+  let ipodOn = true;
+  try {
+    musicOn = localStorage.getItem(MUSIC_KEY) !== "0";
+    ipodOn = localStorage.getItem(IPOD_KEY) !== "0";
+  } catch (_) {}
+  musicBtn.hidden = !ipodOn;
+  const canPlay = () => ipodOn && musicOn;
 
   function setMusic(on) {
     musicOn = on;
@@ -46,7 +53,7 @@
   // La música arranca con el primer toque (los navegadores no permiten audio antes)
   document.addEventListener("pointerdown", (e) => {
     audio.unlock();
-    if (musicOn && !audio.musicPlaying && !musicBtn.contains(e.target)) audio.startMusic();
+    if (canPlay() && !audio.musicPlaying && !musicBtn.contains(e.target)) audio.startMusic();
   }, true);
 
   /* --- el botón se puede arrastrar; tras 10 s sin tocarlo se achica --- */
@@ -129,6 +136,74 @@
   });
   musicBtn.setAttribute("aria-pressed", String(musicOn));
   resetIdle();
+
+  /* --- el iPod se puede quitar desde la página de la tuerca --- */
+
+  async function setIpod(on) {
+    if (on === ipodOn) return;
+    ipodOn = on;
+    try { localStorage.setItem(IPOD_KEY, on ? "1" : "0"); } catch (_) {}
+    audio.unlock();
+    audio.playPop();
+    if (on) {
+      musicBtn.hidden = false;
+      musicBtn.classList.remove("is-small");
+      musicBtn.animate(
+        [
+          { transform: "scale(0) rotate(-25deg)", opacity: 0 },
+          { transform: "scale(1.25) rotate(8deg)", opacity: 1, offset: 0.6 },
+          { transform: "scale(0.92) rotate(-3deg)", offset: 0.8 },
+          { transform: "scale(1) rotate(0)" },
+        ],
+        { duration: 520, easing: "ease-out" }
+      );
+      if (musicOn) audio.startMusic();
+      resetIdle();
+    } else {
+      // se infla, gira y desaparece con un "pop"
+      audio.stopMusic();
+      clearTimeout(idleTimer);
+      const anim = musicBtn.animate(
+        [
+          { transform: getComputedStyle(musicBtn).transform === "none" ? "scale(1)" : getComputedStyle(musicBtn).transform, opacity: 1 },
+          { transform: "scale(1.3) rotate(10deg)", opacity: 1, offset: 0.35 },
+          { transform: "scale(0) rotate(-30deg)", opacity: 0 },
+        ],
+        { duration: 380, easing: "cubic-bezier(0.5, 0, 0.7, 0.4)", fill: "forwards" }
+      );
+      popBurst();
+      await new Promise((r) => setTimeout(r, 380));
+      if (!ipodOn) musicBtn.hidden = true;
+      anim.cancel();
+    }
+  }
+
+  // chispas que salen del iPod al desaparecer
+  function popBurst() {
+    const r = musicBtn.getBoundingClientRect();
+    for (let i = 0; i < 10; i++) {
+      const p = document.createElement("span");
+      p.className = "note";
+      p.textContent = i % 3 ? "✦" : GLYPHS[i % GLYPHS.length] + "\uFE0E";
+      p.style.color = NOTE_COLORS[i % NOTE_COLORS.length];
+      p.style.fontSize = 10 + Math.random() * 10 + "px";
+      p.style.left = r.left + r.width / 2 + "px";
+      p.style.top = r.top + r.height / 2 + "px";
+      document.body.appendChild(p);
+      const a = (i / 10) * Math.PI * 2;
+      const d = 40 + Math.random() * 30;
+      p.animate(
+        [
+          { transform: "translate(-50%, -50%) scale(0.3)", opacity: 1 },
+          { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px)) scale(1)`, opacity: 0 },
+        ],
+        { duration: 600, easing: "ease-out", fill: "forwards" }
+      );
+      setTimeout(() => p.remove(), 650);
+    }
+  }
+
+  window.BonnyMusic = { setIpod, get ipodOn() { return ipodOn; } };
 
   const GLYPHS = ["♪", "♫", "♬", "♩"];
   const NOTE_COLORS = ["#cc6450", "#fbf4ee", "#e8a25c", "#cc6450"];
@@ -460,7 +535,7 @@
       audio.stopMusic();
     } else {
       if (!stopped) videos.forEach((v) => v.play().catch(() => {}));
-      if (musicOn) audio.startMusic();
+      if (canPlay()) audio.startMusic();
     }
   });
 
