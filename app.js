@@ -49,12 +49,86 @@
     if (musicOn && !audio.musicPlaying && !musicBtn.contains(e.target)) audio.startMusic();
   }, true);
 
+  /* --- el botón se puede arrastrar; tras 10 s sin tocarlo se achica --- */
+
+  const POS_KEY = "bonny:music-pos";
+  const IDLE_MS = 10000;
+  let idleTimer = null;
+  let dragBtn = null;
+  let swallowClick = false;
+
+  function resetIdle() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => musicBtn.classList.add("is-small"), IDLE_MS);
+  }
+
+  // coloca el botón (en px del viewport) sin que se salga de la pantalla
+  function placeBtn(x, y) {
+    const w = musicBtn.offsetWidth, h = musicBtn.offsetHeight;
+    x = Math.max(4, Math.min(window.innerWidth - w - 4, x));
+    y = Math.max(4, Math.min(window.innerHeight - h - 4, y));
+    Object.assign(musicBtn.style, { left: x + "px", top: y + "px", right: "auto" });
+    return { x, y };
+  }
+
+  try {
+    const pos = JSON.parse(localStorage.getItem(POS_KEY));
+    if (pos) placeBtn(pos.fx * window.innerWidth, pos.fy * window.innerHeight);
+  } catch (_) {}
+  window.addEventListener("resize", () => {
+    if (!musicBtn.style.left) return;
+    const r = musicBtn.getBoundingClientRect();
+    placeBtn(r.left, r.top);
+  });
+
+  musicBtn.addEventListener("pointerdown", (e) => {
+    try { musicBtn.setPointerCapture(e.pointerId); } catch (_) {}
+    const r = musicBtn.getBoundingClientRect();
+    dragBtn = { id: e.pointerId, x0: e.clientX, y0: e.clientY, ox: e.clientX - r.left, oy: e.clientY - r.top, moved: false };
+    clearTimeout(idleTimer);
+  });
+  musicBtn.addEventListener("pointermove", (e) => {
+    if (!dragBtn || e.pointerId !== dragBtn.id) return;
+    if (!dragBtn.moved && Math.hypot(e.clientX - dragBtn.x0, e.clientY - dragBtn.y0) < 8) return;
+    if (!dragBtn.moved) {
+      dragBtn.moved = true;
+      musicBtn.classList.add("is-dragging");
+      musicBtn.classList.remove("is-small"); // al tomarlo recupera su tamaño
+    }
+    placeBtn(e.clientX - dragBtn.ox, e.clientY - dragBtn.oy);
+  });
+  function endBtnDrag(e) {
+    if (!dragBtn || e.pointerId !== dragBtn.id) return;
+    if (dragBtn.moved) {
+      // queda donde lo sueltas (se recuerda para la próxima vez)
+      const r = musicBtn.getBoundingClientRect();
+      const p = placeBtn(r.left, r.top);
+      try { localStorage.setItem(POS_KEY, JSON.stringify({ fx: p.x / window.innerWidth, fy: p.y / window.innerHeight })); } catch (_) {}
+      musicBtn.classList.remove("is-dragging");
+      swallowClick = true;
+      setTimeout(() => (swallowClick = false), 60);
+    }
+    dragBtn = null;
+    resetIdle();
+  }
+  musicBtn.addEventListener("pointerup", endBtnDrag);
+  musicBtn.addEventListener("pointercancel", endBtnDrag);
+
   musicBtn.addEventListener("click", () => {
+    if (swallowClick) return;
+    // achicado: el toque solo lo devuelve a su tamaño
+    if (musicBtn.classList.contains("is-small")) {
+      musicBtn.classList.remove("is-small");
+      resetIdle();
+      return;
+    }
     // si estaba "encendida" pero aún no sonaba, el primer toque la inicia
     if (musicOn && !audio.musicPlaying) setMusic(true);
     else setMusic(!musicOn);
+    resetIdle();
   });
   musicBtn.setAttribute("aria-pressed", String(musicOn));
+  resetIdle();
 
   const GLYPHS = ["♪", "♫", "♬", "♩"];
   const NOTE_COLORS = ["#cc6450", "#fbf4ee", "#e8a25c", "#cc6450"];
@@ -67,13 +141,15 @@
     n.style.color = NOTE_COLORS[(Math.random() * NOTE_COLORS.length) | 0];
     const size = 14 + Math.random() * 12;
     n.style.fontSize = size + "px";
-    n.style.left = r.left + r.width * 0.35 + "px";
-    n.style.top = r.top + r.height * 0.4 + "px";
+    n.style.left = r.left + r.width * 0.4 + "px";
+    n.style.top = r.top + r.height * 0.35 + "px";
     document.body.appendChild(n);
 
-    // salen hacia la izquierda y abajo, ondulando
-    const dx = -(60 + Math.random() * 90);
-    const dy = 20 + Math.random() * 90;
+    // salen hacia el centro de la pantalla (según dónde esté el botón), ondulando
+    const toLeft = r.left + r.width / 2 > window.innerWidth / 2;
+    const toDown = r.top + r.height / 2 < window.innerHeight / 2;
+    const dx = (toLeft ? -1 : 1) * (60 + Math.random() * 90);
+    const dy = (toDown ? 1 : -1) * (20 + Math.random() * 90);
     const sway = 10 + Math.random() * 14;
     const rot = (Math.random() - 0.5) * 50;
     n.animate([
@@ -85,7 +161,8 @@
   }
 
   (function noteLoop() {
-    if (musicOn && !document.hidden) emitNote();
+    // las notas salen solo mientras la música está sonando
+    if (audio.musicPlaying && !document.hidden) emitNote();
     setTimeout(noteLoop, 380 + Math.random() * 320);
   })();
 
