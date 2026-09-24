@@ -120,7 +120,9 @@
   background: none;
   cursor: pointer;
   touch-action: pan-x;
-  transform: translateY(120%);
+  /* sueltas sobre la mesa: cada una un poco girada */
+  transform-origin: 50% 100%;
+  transform: translateY(120%) rotate(var(--rot, 0deg));
   transition: transform 450ms cubic-bezier(0.3, 1.45, 0.5, 1);
 }
 .dib-crayon--eraser { width: calc(var(--app-w) * 0.1); margin-left: calc(var(--app-w) * 0.02); }
@@ -130,9 +132,41 @@
   height: auto;
   pointer-events: none;
   filter: drop-shadow(0 -2px 5px rgba(60, 20, 0, 0.3));
+  transition: filter 300ms ease;
 }
-.dibujo.is-in .dib-crayon { transform: translateY(6%); }
-.dibujo.is-in .dib-crayon[aria-pressed="true"] { transform: translateY(-9%) scale(1.08); }
+.dibujo.is-in .dib-crayon { transform: translateY(6%) rotate(var(--rot, 0deg)); }
+/* la elegida no se levanta: brilla */
+.dib-crayon[aria-pressed="true"] img {
+  filter:
+    drop-shadow(0 0 4px rgba(255, 244, 205, 0.95))
+    drop-shadow(0 0 12px rgba(255, 196, 96, 0.9));
+  animation: tool-glow 1.8s ease-in-out infinite;
+}
+@keyframes tool-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 244, 205, 0.95)) drop-shadow(0 0 10px rgba(255, 196, 96, 0.75)); }
+  50% { filter: drop-shadow(0 0 6px rgba(255, 248, 220, 1)) drop-shadow(0 0 18px rgba(255, 190, 80, 1)); }
+}
+
+/* ícono blanco de la herramienta, a la izquierda y al centro */
+.dib-tool {
+  position: absolute;
+  left: calc(var(--app-w) * 0.035);
+  top: 50%;
+  width: calc(var(--app-w) * 0.085);
+  aspect-ratio: 1;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 350ms ease 300ms;
+}
+.dibujo.is-in .dib-tool { opacity: 1; }
+.dib-tool__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(70, 25, 5, 0.45));
+}
+.dibujo.is-saving .dib-tool { opacity: 0; transition-delay: 0ms; }
 
 /* tacho: pide un segundo toque para confirmar */
 .dib-trash.is-confirming img { animation: trash-shake 300ms ease; filter: drop-shadow(0 0 6px rgba(224, 89, 59, 0.9)); }

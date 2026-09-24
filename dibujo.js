@@ -46,7 +46,8 @@
     const bottom = stage.getBoundingClientRect().bottom - page.querySelector(".dib-crayons").getBoundingClientRect().top + 6;
     const availH = Math.max(200, H - top - bottom);
     let h = availH, w = h * SHEET_ASPECT;
-    if (w > W * 0.9) { w = W * 0.9; h = w / SHEET_ASPECT; }
+    // deja espacio a la izquierda para el ícono de la herramienta
+    if (w > W * 0.74) { w = W * 0.74; h = w / SHEET_ASPECT; }
     base = { w, h, x: (W - w) / 2, y: top + (availH - h) / 2 };
     paper.style.width = w + "px";
     paper.style.height = h + "px";
@@ -276,11 +277,26 @@
 
   /* ---------- Crayones ---------- */
 
+  // cada herramienta queda un poco girada, como sueltas sobre la mesa
+  crayons.forEach((c) => c.style.setProperty("--rot", `${(Math.random() * 18 - 9).toFixed(1)}deg`));
+
+  const toolIcon = page.querySelector(".dib-tool__img");
+  function showToolIcon() {
+    const src = `assets/img/dibujo/icono-${erasing ? "borrador" : "crayon"}.webp`;
+    if (toolIcon.getAttribute("src") === src) return;
+    toolIcon.src = src;
+    toolIcon.animate(
+      [{ transform: "scale(0.4) rotate(-20deg)", opacity: 0 }, { transform: "scale(1.15)", opacity: 1, offset: 0.7 }, { transform: "none" }],
+      { duration: 360, easing: "ease-out" }
+    );
+  }
+
   crayons.forEach((btn) =>
     btn.addEventListener("click", () => {
       crayons.forEach((c) => c.setAttribute("aria-pressed", String(c === btn)));
       erasing = btn.dataset.tool === "borrador";
       if (!erasing) color = btn.dataset.color;
+      showToolIcon();
       audio.playTick();
     })
   );
