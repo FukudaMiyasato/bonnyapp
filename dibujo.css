@@ -90,7 +90,7 @@
 .dib-btn:active { transform: scale(0.9); }
 .dib-btn:disabled { opacity: 0.5; }
 
-/* crayones abajo: solo asoman; el elegido sube */
+/* herramientas abajo: solo asoman; la elegida sube. La fila se desliza de lado. */
 .dib-crayons {
   position: absolute;
   left: 0;
@@ -98,22 +98,31 @@
   bottom: 0;
   height: calc(var(--app-w) * 0.2 + var(--safe-bottom));
   display: flex;
-  justify-content: center;
+  justify-content: safe center;
   align-items: flex-start;
-  gap: 1.8%;
-  pointer-events: none;
+  gap: calc(var(--app-w) * 0.018);
+  padding: calc(var(--app-w) * 0.04) calc(var(--app-w) * 0.05) 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
 }
+.dib-crayons::-webkit-scrollbar { display: none; }
 .dib-crayon {
-  width: 9%;
+  flex: 0 0 auto;
+  width: calc(var(--app-w) * 0.09);
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
-  touch-action: manipulation;
-  pointer-events: auto;
+  touch-action: pan-x;
   transform: translateY(120%);
   transition: transform 450ms cubic-bezier(0.3, 1.45, 0.5, 1);
 }
+.dib-crayon--eraser { width: calc(var(--app-w) * 0.105); margin-left: calc(var(--app-w) * 0.02); }
 .dib-crayon img {
   display: block;
   width: 100%;
@@ -123,6 +132,14 @@
 }
 .dibujo.is-in .dib-crayon { transform: translateY(18%); }
 .dibujo.is-in .dib-crayon[aria-pressed="true"] { transform: translateY(-14%) scale(1.14); }
+
+/* tacho: pide un segundo toque para confirmar */
+.dib-trash.is-confirming img { animation: trash-shake 300ms ease; filter: drop-shadow(0 0 6px rgba(224, 89, 59, 0.9)); }
+@keyframes trash-shake {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-12deg); }
+  75% { transform: rotate(12deg); }
+}
 
 .dibujo.is-saving .dib-bg,
 .dibujo.is-saving .dib-top,

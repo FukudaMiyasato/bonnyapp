@@ -85,6 +85,22 @@ window.BonnyData = (() => {
     });
   }
 
+  async function deleteBlob(id) {
+    const d = await db();
+    await new Promise((resolve) => {
+      const tx = d.transaction("fotos", "readwrite");
+      tx.objectStore("fotos").delete(id);
+      tx.oncomplete = tx.onerror = () => resolve();
+    });
+  }
+
+  /* ---------- Borrador del dibujo (queda en la pantalla de dibujo, no en los baúles) ---------- */
+
+  const BORRADOR = "dibujo:borrador";
+  const guardarBorrador = (blob) => putBlob(BORRADOR, blob).catch(() => {});
+  const leerBorrador = () => getBlob(BORRADOR).catch(() => null);
+  const borrarBorrador = () => deleteBlob(BORRADOR).catch(() => {});
+
   const urls = new Map();
   /** URL para mostrar la imagen de un recuerdo (se carga una sola vez). */
   async function fotoURL(id) {
@@ -257,6 +273,9 @@ window.BonnyData = (() => {
     ubicacion,
     album,
     guardarAlbum,
+    guardarBorrador,
+    leerBorrador,
+    borrarBorrador,
     borrarTodo,
     baules,
     get baulActivo() { return baules.find((b) => b.id === estado.activo) || null; },

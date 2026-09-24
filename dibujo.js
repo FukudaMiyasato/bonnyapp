@@ -18,6 +18,7 @@
   const saveBtn = page.querySelector(".dib-save");
   const crayons = [...page.querySelectorAll(".dib-crayon")];
   const topBar = page.querySelector(".dib-top");
+  const trashBtn = page.querySelector(".dib-trash");
 
   // hoja.webp mide 832 x 1254; el papel ocupa x 33–805, y 22–1230
   const SHEET_ASPECT = 832 / 1254;
@@ -33,6 +34,8 @@
   let s = 1, r = 0, tx = 0, ty = 0;   // zoom, giro y desplazamiento de la hoja
   let dirty = false;
   let busy = false;
+  let erasing = false;   // borrador elegido
+  let placed = false;    // la hoja ya se colocó (el zoom se conserva entre visitas)
 
   /* ---------- Colocar la hoja ---------- */
 
@@ -105,9 +108,12 @@
   const BRUSH = 10; // radio en píxeles del lienzo
   let last = null;
 
+  const ERASER = 26; // radio del borrador en píxeles del lienzo
+
   function strokeTo(pt) {
-    lctx.strokeStyle = crayonPattern(color);
-    lctx.lineWidth = BRUSH * 2 * (0.9 + Math.random() * 0.2);
+    // el borrador se previsualiza con el color del papel; al soltar se recorta del dibujo
+    lctx.strokeStyle = erasing ? "#f4e9dc" : crayonPattern(color);
+    lctx.lineWidth = erasing ? ERASER * 2 : BRUSH * 2 * (0.9 + Math.random() * 0.2);
     lctx.lineCap = "round";
     lctx.lineJoin = "round";
     lctx.globalAlpha = 0.9;
@@ -119,10 +125,55 @@
   }
 
   function commitStroke() {
-    ctx.drawImage(live, 0, 0);
+    if (erasing) {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.drawImage(live, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
+    } else {
+      ctx.drawImage(live, 0, 0);
+    }
     lctx.clearRect(0, 0, CW, CH);
-    dirty = true;
+    dirty = !isBlank();
+    saveDraftSoon();
   }
+
+  // ¿la hoja quedó en blanco? (revisa una versión reducida del lienzo)
+  const probe = document.createElement("canvas");
+  probe.width = 90;
+  probe.height = Math.round(90 * (CH / CW));
+  const pctx = probe.getContext("2d", { willReadFrequently: true });
+  function isBlank() {
+    pctx.clearRect(0, 0, probe.width, probe.height);
+    pctx.drawImage(canvas, 0, 0, probe.width, probe.height);
+    const d = pctx.getImageData(0, 0, probe.width, probe.height).data;
+    for (let i = 3; i < d.length; i += 4) if (d[i] > 8) return false;
+    return true;
+  }
+
+  /* ---------- Borrador: el dibujo queda guardado en esta pantalla ---------- */
+
+  let draftTimer = null;
+  function saveDraftSoon() {
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(saveDraft, 800);
+  }
+  function saveDraft() {
+    clearTimeout(draftTimer);
+    if (!dirty) return data.borrarBorrador();
+    canvas.toBlob((b) => b && data.guardarBorrador(b), "image/png");
+  }
+  async function loadDraft() {
+    const blob = await data.leerBorrador();
+    if (!blob) return;
+    const img = new Image();
+    img.src = URL.createObjectURL(blob);
+    await img.decode().catch(() => {});
+    ctx.clearRect(0, 0, CW, CH);
+    ctx.drawImage(img, 0, 0, CW, CH);
+    URL.revokeObjectURL(img.src);
+    dirty = !isBlank();
+  }
+  const draftReady = loadDraft();
   const discardStroke = () => lctx.clearRect(0, 0, CW, CH);
 
   /* ---------- Gestos ---------- */
@@ -203,15 +254,23 @@
   stage.addEventListener("pointercancel", onUp);
 
   // acomoda la hoja si quedó muy chica, casi derecha o fuera de la pantalla
+  // la hoja se queda donde la dejes (con su zoom); solo se evita que salga del todo de la pantalla
   function settle() {
     const from = tf();
-    if (s < 0.9) { s = 1; tx = 0; ty = 0; }
-    if (Math.abs(r % 360) < 6) r = 0;
-    const [cx, cy] = center();
-    tx += Math.min(stage.clientWidth, Math.max(0, cx)) - cx;
-    ty += Math.min(stage.clientHeight, Math.max(0, cy)) - cy;
+    if (Math.abs(r % 360) < 4) r = 0;
     apply();
-    paper.animate([{ transform: from }, { transform: tf() }], { duration: 260, easing: "ease-out" });
+    const pr = paper.getBoundingClientRect();
+    const st = stage.getBoundingClientRect();
+    const keep = 90; // px de hoja que siempre quedan a la vista
+    let dx = 0, dy = 0;
+    if (pr.right < st.left + keep) dx = st.left + keep - pr.right;
+    if (pr.left > st.right - keep) dx = st.right - keep - pr.left;
+    if (pr.bottom < st.top + keep) dy = st.top + keep - pr.bottom;
+    if (pr.top > st.bottom - keep) dy = st.bottom - keep - pr.top;
+    tx += dx;
+    ty += dy;
+    apply();
+    if (dx || dy) paper.animate([{ transform: from }, { transform: tf() }], { duration: 260, easing: "ease-out" });
   }
 
   /* ---------- Crayones ---------- */
@@ -219,22 +278,63 @@
   crayons.forEach((btn) =>
     btn.addEventListener("click", () => {
       crayons.forEach((c) => c.setAttribute("aria-pressed", String(c === btn)));
-      color = btn.dataset.color;
+      erasing = btn.dataset.tool === "borrador";
+      if (!erasing) color = btn.dataset.color;
       audio.playTick();
     })
   );
+
+  /* ---------- Tacho: borra todo el dibujo (con un segundo toque) ---------- */
+
+  let trashTimer = null;
+  trashBtn.addEventListener("click", () => {
+    if (busy || !dirty) {
+      trashBtn.animate([{ transform: "rotate(0)" }, { transform: "rotate(-10deg)" }, { transform: "rotate(10deg)" }, { transform: "rotate(0)" }], { duration: 280 });
+      return;
+    }
+    if (!trashBtn.classList.contains("is-confirming")) {
+      trashBtn.classList.add("is-confirming");
+      trashBtn.setAttribute("aria-label", "Toca otra vez para borrar todo");
+      audio.playTick();
+      trashTimer = setTimeout(resetTrash, 2500);
+      return;
+    }
+    resetTrash();
+    // el dibujo se desvanece como si se sacudiera la hoja
+    const fade = document.createElement("canvas");
+    fade.className = "dib-canvas";
+    fade.width = CW;
+    fade.height = CH;
+    fade.getContext("2d").drawImage(canvas, 0, 0);
+    canvas.after(fade);
+    ctx.clearRect(0, 0, CW, CH);
+    dirty = false;
+    data.borrarBorrador();
+    audio.playFlip(0.6);
+    paper.animate(
+      [{ transform: tf() }, { transform: tf() + " rotate(-2deg)" }, { transform: tf() + " rotate(2deg)" }, { transform: tf() }],
+      { duration: 380, easing: "ease-in-out" }
+    );
+    fade.animate([{ opacity: 1, filter: "blur(0)" }, { opacity: 0, filter: "blur(6px)" }], { duration: 450, easing: "ease-out" });
+    setTimeout(() => fade.remove(), 460);
+  });
+  function resetTrash() {
+    clearTimeout(trashTimer);
+    trashBtn.classList.remove("is-confirming");
+    trashBtn.setAttribute("aria-label", "Borrar todo el dibujo");
+  }
 
   /* ---------- Abrir / salir / guardar ---------- */
 
   async function open() {
     document.dispatchEvent(new CustomEvent("bonny:chest", { detail: { open: true } })); // esconde la botonera
-    ctx.clearRect(0, 0, CW, CH);
     discardStroke();
-    dirty = false;
-    s = 1; r = 0; tx = 0; ty = 0;
+    resetTrash();
+    await draftReady; // el dibujo anterior sigue ahí
     page.classList.remove("is-saving");
     page.hidden = false;
     fit();
+    if (!placed) { s = 1; r = 0; tx = 0; ty = 0; apply(); placed = true; }
     crayons.forEach((c, i) => (c.style.transitionDelay = `${250 + i * 45}ms`));
     void page.offsetWidth;
     page.classList.add("is-in");
@@ -252,6 +352,7 @@
   }
 
   async function close() {
+    saveDraft();
     page.classList.remove("is-in");
     await wait(450);
     page.hidden = true;
@@ -317,6 +418,10 @@
     await window.BonnyShelves.receive(paper, baul.id);
     paper.getAnimations().forEach((a) => a.cancel());
     snap.remove();
+    // ya quedó en el baúl: la próxima vez empieza con una hoja nueva
+    ctx.clearRect(0, 0, CW, CH);
+    dirty = false;
+    data.borrarBorrador();
     paper.style.visibility = "";
     page.hidden = true;
     page.classList.remove("is-in", "is-saving");

@@ -260,11 +260,15 @@
       <button class="dib-btn dib-back" type="button" aria-label="Salir">
         <img src="assets/img/dibujo/btn-atras.webp" alt="" draggable="false" />
       </button>
+      <button class="dib-btn dib-trash" type="button" aria-label="Borrar todo el dibujo">
+        <img src="assets/img/dibujo/btn-tacho.webp" alt="" draggable="false" />
+      </button>
       <button class="dib-btn dib-save" type="button" aria-label="Guardar dibujo">
         <img src="assets/img/dibujo/btn-guardar.webp" alt="" draggable="false" />
       </button>
     </div>
-    <div class="dib-crayons" role="radiogroup" aria-label="Crayones">
+    <!-- herramientas: se deslizan de lado si no caben -->
+    <div class="dib-crayons" role="radiogroup" aria-label="Herramientas de dibujo">
       <button class="dib-crayon" type="button" data-color="#fdc40c" aria-label="Crayón amarillo" aria-pressed="false">
         <img src="assets/img/dibujo/crayon-amarillo.webp" alt="" draggable="false" />
       </button>
@@ -285,6 +289,9 @@
       </button>
       <button class="dib-crayon" type="button" data-color="#0f7efc" aria-label="Crayón azul" aria-pressed="false">
         <img src="assets/img/dibujo/crayon-azul.webp" alt="" draggable="false" />
+      </button>
+      <button class="dib-crayon dib-crayon--eraser" type="button" data-tool="borrador" aria-label="Borrador" aria-pressed="false">
+        <img src="assets/img/dibujo/borrador.webp" alt="" draggable="false" />
       </button>
     </div>
   </section>
